@@ -51,7 +51,7 @@ GeneRogue is a generic roguelike loosely based on the famous [python roguelike t
 
 ## compile and run the demo game
 
-`npm run build:generogue`
+`npm run build:runeswap`
 
 Then open build/index.html in your browser.
 
