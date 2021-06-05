@@ -6,13 +6,13 @@ import * as Umbra from "./umbra/main";
 import * as Gui from "./gui/main";
 import * as Actors from "./actors/main";
 import { NumberSelector } from "./gui_input_number";
-import { ACTOR_TYPES } from "./config_actors";
 import {
   CONTAINER_SCREEN_MIN_WIDTH,
   CONTAINER_SCREEN_MIN_HEIGHT,
   EVENT_CHANGE_STATUS,
   INVENTORY_MANIPULATION_TIME,
   GameStatus,
+  ACTOR_TYPES,
 } from "./base";
 
 /**
@@ -31,7 +31,6 @@ export class ContainerPanel extends Gui.Widget {
     ACTOR_TYPES.WEAPON,
     ACTOR_TYPES.FLASK,
     ACTOR_TYPES.SCROLL,
-    ACTOR_TYPES.LIGHT,
   ];
 
   private owner: Actors.Actor;

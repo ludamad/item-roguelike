@@ -116,24 +116,7 @@ export abstract class MapScene
         positiveButton: Umbra.KeyCodeEnum.DOM_VK_PERIOD,
         type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
       },
-      // diagonal movements (for now removed)
-      // { name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.MOVE_NW],
-      //     positiveButton: Umbra.KeyCodeEnum.DOM_VK_NUMPAD7, type: Umbra.AxisTypeEnum.KEY_OR_BUTTON },
-      // { name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.MOVE_NW],
-      //     positiveButton: Umbra.KeyCodeEnum.DOM_VK_Y, type: Umbra.AxisTypeEnum.KEY_OR_BUTTON },
-      // { name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.MOVE_SW],
-      //     positiveButton: Umbra.KeyCodeEnum.DOM_VK_NUMPAD1, type: Umbra.AxisTypeEnum.KEY_OR_BUTTON },
-      // { name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.MOVE_SW],
-      //     positiveButton: Umbra.KeyCodeEnum.DOM_VK_B, type: Umbra.AxisTypeEnum.KEY_OR_BUTTON },
-      // { name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.MOVE_NE],
-      //     positiveButton: Umbra.KeyCodeEnum.DOM_VK_NUMPAD9, type: Umbra.AxisTypeEnum.KEY_OR_BUTTON },
-      // { name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.MOVE_NE],
-      //     positiveButton: Umbra.KeyCodeEnum.DOM_VK_U, type: Umbra.AxisTypeEnum.KEY_OR_BUTTON },
-      // { name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.MOVE_SE],
-      //     positiveButton: Umbra.KeyCodeEnum.DOM_VK_NUMPAD3, type: Umbra.AxisTypeEnum.KEY_OR_BUTTON },
-      // { name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.MOVE_SE],
-      //     positiveButton: Umbra.KeyCodeEnum.DOM_VK_N, type: Umbra.AxisTypeEnum.KEY_OR_BUTTON },
-      // other movements
+      // movement
       {
         name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.WAIT],
         positiveButton: Umbra.KeyCodeEnum.DOM_VK_NUMPAD5,
@@ -167,6 +150,21 @@ export abstract class MapScene
       {
         name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.VALIDATE],
         positiveButton: Umbra.KeyCodeEnum.DOM_VK_ENTER,
+        type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
+      },
+      {
+        name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.AUTOEXPLORE],
+        positiveButton: Umbra.KeyCodeEnum.DOM_VK_O,
+        type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
+      },
+      {
+        name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.AUTOFIGHT],
+        positiveButton: Umbra.KeyCodeEnum.DOM_VK_U,
+        type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
+      },
+      {
+        name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.AUTOFIGHT],
+        positiveButton: Umbra.KeyCodeEnum.DOM_VK_TAB,
         type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
       },
       {

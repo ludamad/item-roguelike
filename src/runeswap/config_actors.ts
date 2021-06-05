@@ -26,6 +26,7 @@ import {
   MIN_GUARD_RANGE,
   MAX_GUARD_RANGE,
   CTX_KEY_GUARD,
+  ACTOR_TYPES,
 } from "./base";
 import { registerPersistentClasses } from "./config_persistent";
 import {
@@ -33,93 +34,12 @@ import {
   IEventEffectDef,
   IInstantHealthEffectDef,
   ITeleportEffectDef,
+  PLAYER_WALK_TIME,
 } from "./actors/main";
 
 // persistent classes must be registered before actors
 // as behavior trees are created using the JSONSerializer
 registerPersistentClasses();
-
-/**
- * Const: ACTOR_TYPES
- * name of all the actor types existing in the game.
- */
-export const ACTOR_TYPES = {
-  CREATURE: "creature[s]",
-  HUMANOID: "humanoid[s]",
-  HOSTILE_HUMANOID: "hostile humanoid[s]",
-  GOBLIN: "goblin[s]",
-  ORC: "orc[s]",
-  TROLL: "troll[s]",
-  HUMAN: "human[s]",
-  PLAYER: "player",
-  MAGIC: "magic",
-  ITEM: "item[s]",
-  FLASK: "flask[s]",
-  OIL_FLASK: "oil flask[s]",
-  MONEY: "money",
-  GOLD_PIECE: "gold piece[s]",
-  CONTAINER: "container[s]",
-  STATIC_CONTAINER: "static container[s]",
-  SMALL_CHEST: "small chest[s]",
-  CHEST: "chest[s]",
-  CRATE: "crate[s]",
-  BARREL: "barrel[s]",
-  PICKABLE_CONTAINER: "pickable container[s]",
-  POUCH: "pouch[es]",
-  BAG: "bag[s]",
-  SATCHEL: "satchel[s]",
-  PACK: "pack[s]",
-  MAP_CASE: "map case[s]",
-  KEY_RING: "key ring[s]",
-  POTION: "potion[s]",
-  HEALTH_POTION: "health potion[s]",
-  REGENERATION_POTION: "regeneration potion[s]",
-  SCROLL: "scroll[s]",
-  SCROLL_OF_LIGHTNING_BOLT: "scroll[s] of lighting bolt",
-  SCROLL_OF_FIREBALL: "scroll[s] of fireball",
-  SCROLL_OF_CONFUSION: "scroll[s] of confusion",
-  WEAPON: "weapon[s]",
-  BLADE: "blade[s]",
-  KNIFE: "knife[s]",
-  SHORT_SWORD: "short sword[s]",
-  LONGSWORD: "longsword[s]",
-  GREATSWORD: "greatsword[s]",
-  SHIELD: "shield[s]",
-  WOODEN_SHIELD: "wooden shield[s]",
-  IRON_SHIELD: "iron shield[s]",
-  RANGED: "ranged",
-  SHORT_BOW: "short bow[s]",
-  LONG_BOW: "long bow[s]",
-  CROSSBOW: "crossbow[s]",
-  WAND: "wand[s]",
-  WAND_OF_FROST: "wand[s] of frost",
-  STAFF: "staff[s]",
-  STAFF_OF_TELEPORTATION: "staff[s] of teleportation",
-  STAFF_OF_LIFE_DETECTION: "staff[s] of life detection",
-  STAFF_OF_MAPPING: "staff[s] of mapping",
-  SUNROD: "sunrod[s]",
-  PROJECTILE: "projectile[s]",
-  ARROW: "arrow[s]",
-  BONE_ARROW: "bone arrow[s]",
-  IRON_ARROW: "iron arrow[s]",
-  BOLT: "bolt[s]",
-  LIGHT: "light[s]",
-  PICKABLE_LIGHT: "pickable light[s]",
-  CONSUMABLE_LIGHT: "consumable light[s]",
-  CANDLE: "candle[s]",
-  TORCH: "torch[es]",
-  REFILLABLE_LIGHT: "refillable light[s]",
-  LANTERN: "lantern[s]",
-  KEY: "key[s]",
-  DEVICE: "device[s]",
-  WALL_TORCH: "wall torch[es]",
-  STAIRS: "stairs",
-  STAIRS_UP: "stairs up",
-  STAIRS_DOWN: "stairs down",
-  DOOR: "door[s]",
-  WOODEN_DOOR: "wooden door[s]",
-  IRON_DOOR: "iron door[s]",
-};
 
 export const BEHAVIOR_TREES = {
   BASIC_HOSTILE: "basic hostile",
@@ -204,8 +124,8 @@ Actors.ActorFactory.registerActorDef({
 
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.GOBLIN,
-  ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: 4 },
-  attacker: { attackTime: 4, hitPoints: 1 },
+  ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: PLAYER_WALK_TIME },
+  attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 1 },
   ch: "g",
   color: 0x3f7f3f,
   destructible: {
@@ -215,7 +135,6 @@ Actors.ActorFactory.registerActorDef({
     loot: {
       classProb: [
         { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 1 },
-        { clazz: ACTOR_TYPES.TORCH, prob: 1 },
         { clazz: undefined, prob: 3 },
       ],
     },
@@ -226,8 +145,8 @@ Actors.ActorFactory.registerActorDef({
 
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.ORC,
-  ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: 5 },
-  attacker: { attackTime: 5, hitPoints: 2 },
+  ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: PLAYER_WALK_TIME },
+  attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 2 },
   ch: "o",
   color: 0x3f7f3f,
   destructible: {
@@ -237,7 +156,6 @@ Actors.ActorFactory.registerActorDef({
     loot: {
       classProb: [
         { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 1 },
-        { clazz: ACTOR_TYPES.TORCH, prob: 1 },
         { clazz: ACTOR_TYPES.POTION, prob: 1 },
       ],
       countProb: { 0: 30, 1: 50, 2: 20 },
@@ -249,8 +167,8 @@ Actors.ActorFactory.registerActorDef({
 
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.TROLL,
-  ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: 6 },
-  attacker: { attackTime: 6, hitPoints: 3 },
+  ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: PLAYER_WALK_TIME },
+  attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 3 },
   blockSight: true,
   ch: "T",
   color: 0x007f00,
@@ -261,7 +179,6 @@ Actors.ActorFactory.registerActorDef({
     loot: {
       classProb: [
         { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 1 },
-        { clazz: ACTOR_TYPES.TORCH, prob: 1 },
         { clazz: ACTOR_TYPES.POTION, prob: 1 },
       ],
       countProb: { 0: 15, 1: 60, 2: 25 },
@@ -298,7 +215,7 @@ Actors.ActorFactory.registerActorDef({
     color: 0xffffff,
     falloffType: Actors.LightFalloffTypeEnum.NORMAL,
     range: 8,
-    renderMode: Actors.LightRenderModeEnum.MAX,
+    renderMode: Actors.LightRenderModeEnum.ADDITIVE,
   },
   prototypes: [ACTOR_TYPES.HUMAN],
   xpHolder: { baseLevel: XP_BASE_LEVEL, newLevel: XP_NEW_LEVEL },
@@ -314,28 +231,6 @@ Actors.ActorFactory.registerActorDef({
   ch: "!",
   containerQualifier: true,
   prototypes: [ACTOR_TYPES.ITEM],
-});
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.OIL_FLASK,
-  color: OIL_FLASK_COLOR,
-  pickable: {
-    onUseEffector: {
-      destroyOnEffect: true,
-      effect: <IInstantHealthEffectDef>{
-        amount: 200,
-        canResurrect: true,
-        failureMessage: "The lantern is already full.",
-        successMessage: "[The actor2] refill[s2] [its2] lantern.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
-      },
-      targetSelector: {
-        actorType: ACTOR_TYPES.LANTERN,
-        method: Actors.TargetSelectionMethodEnum.WEARER_INVENTORY,
-      },
-    },
-    weight: 1,
-  },
-  prototypes: [ACTOR_TYPES.FLASK],
 });
 // ================================== money ==================================
 Actors.ActorFactory.registerActorDef({
@@ -401,40 +296,40 @@ Actors.ActorFactory.registerActorDef({
   prototypes: [ACTOR_TYPES.CONTAINER, ACTOR_TYPES.ITEM],
 });
 
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.POUCH,
-  container: { capacity: 2 },
-  prototypes: [ACTOR_TYPES.PICKABLE_CONTAINER],
-});
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.BAG,
-  container: { capacity: 5 },
-  prototypes: [ACTOR_TYPES.PICKABLE_CONTAINER],
-});
+// Actors.ActorFactory.registerActorDef({
+//   name: ACTOR_TYPES.POUCH,
+//   container: { capacity: 2 },
+//   prototypes: [ACTOR_TYPES.PICKABLE_CONTAINER],
+// });
+// Actors.ActorFactory.registerActorDef({
+//   name: ACTOR_TYPES.BAG,
+//   container: { capacity: 5 },
+//   prototypes: [ACTOR_TYPES.PICKABLE_CONTAINER],
+// });
 
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.SATCHEL,
-  container: { capacity: 10 },
-  prototypes: [ACTOR_TYPES.PICKABLE_CONTAINER],
-});
+// Actors.ActorFactory.registerActorDef({
+//   name: ACTOR_TYPES.SATCHEL,
+//   container: { capacity: 10 },
+//   prototypes: [ACTOR_TYPES.PICKABLE_CONTAINER],
+// });
 
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.PACK,
-  container: { capacity: 40 },
-  prototypes: [ACTOR_TYPES.PICKABLE_CONTAINER],
-});
+// Actors.ActorFactory.registerActorDef({
+//   name: ACTOR_TYPES.PACK,
+//   container: { capacity: 40 },
+//   prototypes: [ACTOR_TYPES.PICKABLE_CONTAINER],
+// });
 
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.KEY_RING,
-  container: { capacity: 5, filter: [ACTOR_TYPES.KEY] },
-  prototypes: [ACTOR_TYPES.PICKABLE_CONTAINER],
-});
+// Actors.ActorFactory.registerActorDef({
+//   name: ACTOR_TYPES.KEY_RING,
+//   container: { capacity: 5, filter: [ACTOR_TYPES.KEY] },
+//   prototypes: [ACTOR_TYPES.PICKABLE_CONTAINER],
+// });
 
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.MAP_CASE,
-  container: { capacity: 5, filter: [ACTOR_TYPES.SCROLL] },
-  prototypes: [ACTOR_TYPES.PICKABLE_CONTAINER],
-});
+// Actors.ActorFactory.registerActorDef({
+//   name: ACTOR_TYPES.MAP_CASE,
+//   container: { capacity: 5, filter: [ACTOR_TYPES.SCROLL] },
+//   prototypes: [ACTOR_TYPES.PICKABLE_CONTAINER],
+// });
 
 // ================================== potions ==================================
 Actors.ActorFactory.registerActorDef({
@@ -602,176 +497,6 @@ Actors.ActorFactory.registerActorDef({
     weight: 0.1,
   },
   prototypes: [ACTOR_TYPES.SCROLL],
-});
-
-// ================================== lights ==================================
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.LIGHT,
-  abstract: true,
-  activable: {
-    activateMessage: "[The actor1] is on.",
-    deactivateMessage: "[The actor1] is off.",
-    type: Actors.ActivableTypeEnum.TOGGLE,
-  },
-  ch: "/",
-  containerQualifier: true,
-  prototypes: [ACTOR_TYPES.ITEM],
-});
-
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.PICKABLE_LIGHT,
-  abstract: true,
-  equipment: {
-    slots: [Actors.SLOT_LEFT_HAND, Actors.SLOT_RIGHT_HAND],
-  },
-  prototypes: [ACTOR_TYPES.LIGHT],
-});
-
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.CONSUMABLE_LIGHT,
-  abstract: true,
-  destructible: {
-    qualifiers: [
-      "burnt out",
-      "almost burnt out",
-      "half burnt",
-      "slightly burnt",
-      "",
-    ],
-  },
-  prototypes: [ACTOR_TYPES.PICKABLE_LIGHT],
-});
-
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.CANDLE,
-  ai: {
-    conditions: [
-      {
-        amount: -1,
-        nbTurns: 0,
-        noDisplay: true,
-        onlyIfActive: true,
-        type: Actors.ConditionTypeEnum.HEALTH_VARIATION,
-      },
-    ],
-    type: Actors.AiTypeEnum.ITEM,
-    walkTime: Actors.PLAYER_WALK_TIME,
-  },
-  color: BONE_COLOR,
-  destructible: {
-    deathMessage: "[The actor2's] candle has burnt away",
-    healthPoints: 160,
-  },
-  // light: {
-  //   color: CANDLE_LIGHT_COLOR,
-  //   falloffType: Actors.LightFalloffTypeEnum.NONE,
-  //   intensityVariationLength: 200,
-  //   intensityVariationPattern: "noise",
-  //   intensityVariationRange: 0.25,
-  //   range: 8,
-  //   renderMode: Actors.LightRenderModeEnum.MAX,
-  // },
-  pickable: { weight: 0.5 },
-  prototypes: [ACTOR_TYPES.CONSUMABLE_LIGHT],
-});
-
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.TORCH,
-  ai: {
-    conditions: [
-      {
-        amount: -1,
-        nbTurns: 0,
-        noDisplay: true,
-        onlyIfActive: true,
-        type: Actors.ConditionTypeEnum.HEALTH_VARIATION,
-      },
-    ],
-    type: Actors.AiTypeEnum.ITEM,
-    walkTime: Actors.PLAYER_WALK_TIME,
-  },
-  color: WOOD_COLOR,
-  destructible: {
-    deathMessage: "[The actor2's] torch has burnt away",
-    healthPoints: 240,
-  },
-  // light: {
-  //   color: TORCH_LIGHT_COLOR,
-  //   falloffType: Actors.LightFalloffTypeEnum.LINEAR,
-  //   intensityVariationLength: 300,
-  //   intensityVariationPattern: "noise",
-  //   intensityVariationRange: 0.15,
-  //   range: 9,
-  //   renderMode: Actors.LightRenderModeEnum.MAX,
-  // },
-  pickable: { weight: 0.5 },
-  prototypes: [ACTOR_TYPES.CONSUMABLE_LIGHT],
-});
-
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.REFILLABLE_LIGHT,
-  abstract: true,
-  destructible: {
-    qualifiers: ["empty", "almost empty", "half empty", "", ""],
-  },
-  prototypes: [ACTOR_TYPES.PICKABLE_LIGHT],
-});
-
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.LANTERN,
-  ai: {
-    conditions: [
-      {
-        amount: -1,
-        nbTurns: 0,
-        noDisplay: true,
-        onlyIfActive: true,
-        type: Actors.ConditionTypeEnum.HEALTH_VARIATION,
-      },
-    ],
-    type: Actors.AiTypeEnum.ITEM,
-    walkTime: Actors.PLAYER_WALK_TIME,
-  },
-  color: WOOD_COLOR,
-  destructible: {
-    corpseName: "empty lantern",
-    deathMessage: "[The actor2's] lantern is empty.",
-    healthPoints: 500,
-  },
-  // light: {
-  //   color: TORCH_LIGHT_COLOR,
-  //   falloffType: Actors.LightFalloffTypeEnum.LINEAR,
-  //   intensityVariationLength: 500,
-  //   intensityVariationPattern: "noise",
-  //   intensityVariationRange: 0.1,
-  //   range: 12,
-  //   renderMode: Actors.LightRenderModeEnum.MAX,
-  // },
-  pickable: { weight: 1 },
-  prototypes: [ACTOR_TYPES.REFILLABLE_LIGHT],
-});
-
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.WALL_TORCH,
-  activable: {
-    activateMessage: "[The actor1] is on.",
-    activeByDefault: true,
-    deactivateMessage: "[The actor1] is off.",
-    type: Actors.ActivableTypeEnum.TOGGLE,
-  },
-  color: WOOD_COLOR,
-  displayOutOfFov: true,
-  // light: {
-  //   color: TORCH_LIGHT_COLOR,
-  //   falloffType: Actors.LightFalloffTypeEnum.LINEAR,
-  //   intensityVariationLength: 300,
-  //   intensityVariationPattern: "noise",
-  //   intensityVariationRange: 0.15,
-  //   range: 18,
-  //   renderMode: Actors.LightRenderModeEnum.MAX,
-  // },
-  prototypes: [ACTOR_TYPES.LIGHT],
-  wallActor: true,
 });
 
 // ================================== weapons ==================================
@@ -1173,8 +898,8 @@ Actors.ActorFactory.registerActorDef({
 
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.KEY,
-  ch: "p",
-  color: IRON_COLOR,
+  ch: "-",
+  color: GOLD_COLOR,
   pickable: { weight: 0.1 },
   prototypes: [ACTOR_TYPES.ITEM],
 });

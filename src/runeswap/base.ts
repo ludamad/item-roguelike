@@ -31,7 +31,7 @@ export const TILEPICKER_KO_COLOR: Core.Color = 0xff2222;
 
 // some material colors
 export const DARK_WOOD_COLOR: Core.Color = 0x2c1e14;
-export const WOOD_COLOR: Core.Color = 0x7d320b;
+export const WOOD_COLOR: Core.Color = 0xffa070;
 export const LIGHT_COLOR: Core.Color = 0xdf9f48;
 export const IVORY_COLOR: Core.Color = 0xdfd8bb;
 export const PAPER_COLOR: Core.Color = 0xc4d67e;
@@ -104,3 +104,76 @@ export const enum GameStatus {
   // player died
   DEFEAT,
 }
+
+/**
+ * Const: ACTOR_TYPES
+ * name of all the actor types existing in the game.
+ */
+export const ACTOR_TYPES = {
+  CREATURE: "creature[s]",
+  HUMANOID: "humanoid[s]",
+  HOSTILE_HUMANOID: "hostile humanoid[s]",
+  GOBLIN: "goblin[s]",
+  ORC: "orc[s]",
+  TROLL: "troll[s]",
+  HUMAN: "human[s]",
+  PLAYER: "player",
+  MAGIC: "magic",
+  ITEM: "item[s]",
+  FLASK: "flask[s]",
+  MONEY: "money",
+  GOLD_PIECE: "gold piece[s]",
+  CONTAINER: "container[s]",
+  STATIC_CONTAINER: "static container[s]",
+  SMALL_CHEST: "small chest[s]",
+  CHEST: "chest[s]",
+  CRATE: "crate[s]",
+  BARREL: "barrel[s]",
+  PICKABLE_CONTAINER: "pickable container[s]",
+  // POUCH: "pouch[es]",
+  // BAG: "bag[s]",
+  // SATCHEL: "satchel[s]",
+  // PACK: "pack[s]",
+  // MAP_CASE: "map case[s]",
+  // KEY_RING: "key ring[s]",
+  POTION: "potion[s]",
+  HEALTH_POTION: "health potion[s]",
+  REGENERATION_POTION: "regeneration potion[s]",
+  SCROLL: "scroll[s]",
+  SCROLL_OF_LIGHTNING_BOLT: "scroll[s] of lighting bolt",
+  SCROLL_OF_FIREBALL: "scroll[s] of fireball",
+  SCROLL_OF_CONFUSION: "scroll[s] of confusion",
+  WEAPON: "weapon[s]",
+  BLADE: "blade[s]",
+  KNIFE: "knife[s]",
+  SHORT_SWORD: "short sword[s]",
+  LONGSWORD: "longsword[s]",
+  GREATSWORD: "greatsword[s]",
+  SHIELD: "shield[s]",
+  WOODEN_SHIELD: "wooden shield[s]",
+  IRON_SHIELD: "iron shield[s]",
+  RANGED: "ranged",
+  SHORT_BOW: "short bow[s]",
+  LONG_BOW: "long bow[s]",
+  CROSSBOW: "crossbow[s]",
+  WAND: "wand[s]",
+  WAND_OF_FROST: "wand[s] of frost",
+  STAFF: "staff[s]",
+  STAFF_OF_TELEPORTATION: "staff[s] of teleportation",
+  STAFF_OF_LIFE_DETECTION: "staff[s] of life detection",
+  STAFF_OF_MAPPING: "staff[s] of mapping",
+  SUNROD: "sunrod[s]",
+  PROJECTILE: "projectile[s]",
+  ARROW: "arrow[s]",
+  BONE_ARROW: "bone arrow[s]",
+  IRON_ARROW: "iron arrow[s]",
+  BOLT: "bolt[s]",
+  KEY: "key[s]",
+  DEVICE: "device[s]",
+  STAIRS: "stairs",
+  STAIRS_UP: "stairs up",
+  STAIRS_DOWN: "stairs down",
+  DOOR: "door[s]",
+  WOODEN_DOOR: "wooden door[s]",
+  IRON_DOOR: "iron door[s]",
+};

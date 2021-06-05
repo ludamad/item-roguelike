@@ -8,6 +8,7 @@ import * as Gui from "./gui/main";
 import * as Actors from "./actors/main";
 import * as Map from "./map/main";
 import * as Constants from "./base";
+import { getEngine } from "./main";
 
 /**
  * =============================================================================
@@ -136,6 +137,26 @@ export class StatusPanel
       player.xpHolder.getNextLevelXp(),
       Constants.XP_BAR_BACKGROUND,
       Constants.XP_BAR_FOREGROUND
+    );
+
+    this.renderBar(
+      1,
+      2,
+      Constants.STAT_BAR_WIDTH,
+      "XP(" + player.xpHolder.xpLevel + ")",
+      player.xpHolder.xp,
+      player.xpHolder.getNextLevelXp(),
+      Constants.XP_BAR_BACKGROUND,
+      Constants.XP_BAR_FOREGROUND
+    );
+    this.console.print(1, 3, "FLOOR " + getEngine().dungeonLevel);
+    this.console.print(
+      1,
+      4,
+      "CAPACITY " +
+        player.container.computeTotalWeight().toFixed(1) +
+        "/" +
+        player.container.capacity
     );
     this.renderConditions(player.ai.conditions);
     this.renderMessages();

@@ -2,7 +2,7 @@
  * Section: Constants
  */
 import * as Core from "../core/main";
-import imageUrl from "../../terminal12x12.png";
+import imageUrl from "../../terminal24x24.png";
 
 // default configuration
 export const DEFAULT_CONSOLE_WIDTH: number = 80;

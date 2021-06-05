@@ -27,6 +27,13 @@ import {
 } from "./base";
 import { ITilePicker } from "./actor_effect";
 import { ActorFactory } from "./actor_factory";
+import {
+  adjacentPositionTowards,
+  findNearestEnemy,
+  findNearestUnexplored,
+  isEmpty,
+} from "../map_utils";
+import { ACTOR_TYPES } from "../base";
 
 /**
  * ==============================================================================
@@ -252,14 +259,20 @@ export class BaseAi implements IActorFeature, IContainerListener {
     let x: number = owner.pos.x;
     let y: number = owner.pos.y;
     let currentMap: Map.Map = Map.Map.current;
-    if (currentMap.canWalk(x + stepdx, y + stepdy)) {
-      // can walk
-      x += stepdx;
-      y += stepdy;
-    } else if (currentMap.canWalk(x + stepdx, y)) {
+    if (
+      stepdx !== 0 &&
+      (attack
+        ? !currentMap.isWall(x + stepdx, y)
+        : currentMap.canWalk(x + stepdx, y))
+    ) {
       // horizontal slide
       x += stepdx;
-    } else if (currentMap.canWalk(x, y + stepdy)) {
+    } else if (
+      stepdy !== 0 &&
+      (attack
+        ? !currentMap.isWall(x, y + stepdy)
+        : currentMap.canWalk(x, y + stepdy))
+    ) {
       // vertical slide
       y += stepdy;
     }
@@ -338,7 +351,7 @@ export class BaseAi implements IActorFeature, IContainerListener {
       (actor: Actor) =>
         actor.pos.x === x &&
         actor.pos.y === y &&
-        actor.isA("creature[s]") &&
+        actor.isA(ACTOR_TYPES.CREATURE) &&
         !actor.destructible.isDead()
     );
     if (actors.length > 0) {
@@ -476,18 +489,30 @@ export class PlayerAi extends BaseAi {
       return;
     }
     switch (action) {
+      case PlayerActionEnum.AUTOFIGHT:
+        // move to the target cell or attack if there's a creature
+        this.autoFight(owner);
+        break;
+      case PlayerActionEnum.AUTOEXPLORE:
+        // move to the target cell or attack if there's a creature
+        this.autoExplore(owner);
+        break;
       case PlayerActionEnum.MOVE_NORTH:
       case PlayerActionEnum.MOVE_SOUTH:
       case PlayerActionEnum.MOVE_EAST:
       case PlayerActionEnum.MOVE_WEST:
-        // For now, removing diagonals
-        // case PlayerActionEnum.MOVE_NW:
-        // case PlayerActionEnum.MOVE_NE:
-        // case PlayerActionEnum.MOVE_SW:
-        // case PlayerActionEnum.MOVE_SE:
         let move: Core.Position = convertActionToPosition(action);
-        // move to the target cell or attack if there's a creature
-        this.moveOrAttack(owner, owner.pos.x + move.x, owner.pos.y + move.y);
+        const x = owner.pos.x + move.x,
+          y = owner.pos.y + move.y;
+        if (
+          Map.Map.current.canWalk(x, y) ||
+          !isEmpty(new Core.Position(x, y))
+        ) {
+          // move to the target cell or attack if there's a creature
+          this.moveOrAttack(owner, x, y);
+        } else {
+          Actor.scheduler.pause();
+        }
         break;
       case PlayerActionEnum.WAIT:
         owner.wait(this.walkTime);
@@ -508,6 +533,41 @@ export class PlayerAi extends BaseAi {
       default:
         // TODO. not supported. (flying mount or underwater swimming)
         break;
+    }
+  }
+  autoExplore(owner: Actor) {
+    const target = findNearestEnemy(owner.pos);
+    if (target) {
+      Umbra.logger.error("You can't explore, you see an enemy!");
+      Actor.scheduler.pause();
+      return;
+    }
+    const nearestWaypoint = findNearestUnexplored(owner.pos);
+    if (nearestWaypoint) {
+      const nearest = adjacentPositionTowards(owner, nearestWaypoint);
+      if (nearest) {
+        // move to the target cell
+        this.moveToCell(owner, nearest, true);
+      } else {
+        Actor.scheduler.pause();
+      }
+    } else {
+      Actor.scheduler.pause();
+    }
+  }
+  autoFight(owner: Actor) {
+    const target = findNearestEnemy(owner.pos);
+    if (target) {
+      // move to the target cell
+      this.moveToCell(owner, target, true);
+      //   if (nearest) {
+      //     // move to the target cell
+      //     this.moveOrAttack(owner, nearest.x, nearest.y);
+      //   } else {
+      //     Actor.scheduler.pause();
+      //   }
+    } else {
+      Actor.scheduler.pause();
     }
   }
 

@@ -276,16 +276,16 @@ export class LightDungeonShader implements Umbra.IEventListener, IMapShader {
       pos.y,
       actor.light.options.range
     );
-    let lightOperation: (c1: Core.Color, c2: Core.Color) => Core.Color;
-    switch (actor.light.options.renderMode) {
-      case Actors.LightRenderModeEnum.MAX:
-        lightOperation = Core.ColorUtils.max;
-        break;
-      default:
-      case Actors.LightRenderModeEnum.ADDITIVE:
-        lightOperation = Core.ColorUtils.add;
-        break;
-    }
+    // let lightOperation: (c1: Core.Color, c2: Core.Color) => Core.Color;
+    // switch (actor.light.options.renderMode) {
+    //   case Actors.LightRenderModeEnum.MAX:
+    //     lightOperation = Core.ColorUtils.max;
+    //     break;
+    //   default:
+    //   case Actors.LightRenderModeEnum.ADDITIVE:
+    //     lightOperation = Core.ColorUtils.add;
+    //     break;
+    // }
     for (
       let x: number = range.x, xmax: number = range.x + range.w;
       x < xmax;
@@ -301,12 +301,13 @@ export class LightDungeonShader implements Umbra.IEventListener, IMapShader {
         let dy2 = pos.y - y - posVariationCoef;
         dy2 = dy2 * dy2;
         if (dx2 + dy2 <= squaredRange && this.inFov[x][y]) {
-          let intensity: number =
-            actor.light.computeIntensity(dx2 + dy2) * intensityCoef;
-          this.lightMap[x][y] = lightOperation(
-            this.lightMap[x][y],
-            Core.ColorUtils.multiply(actor.light.options.color, intensity)
-          );
+          let intensity: number = 1; //intensityCoef;
+          // actor.light.computeIntensity(dx2 + dy2) * intensityCoef;
+          this.lightMap[x][y] = actor.light.options.color;
+          // lightOperation(
+          //   this.lightMap[x][y],
+          //   Core.ColorUtils.multiply(actor.light.options.color, intensity)
+          // );
         }
       }
     }

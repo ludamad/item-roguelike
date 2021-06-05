@@ -1,7 +1,8 @@
-import { ACTOR_TYPES, BEHAVIOR_TREES } from "./config_actors";
+import { BEHAVIOR_TREES } from "./config_actors";
 import * as Actors from "./actors/main";
 import * as Constants from "./base";
 import { IBspDungeonConfig } from "./map/map_build_dungeon_bsp";
+import { ACTOR_TYPES } from "./base";
 
 let itemProbabilities: Actors.IProbabilityMap = {
   classProb: [
@@ -28,9 +29,6 @@ let itemProbabilities: Actors.IProbabilityMap = {
     { clazz: ACTOR_TYPES.LONGSWORD, prob: [[6, 1]] },
     { clazz: ACTOR_TYPES.IRON_SHIELD, prob: [[7, 1]] },
     { clazz: ACTOR_TYPES.GREATSWORD, prob: [[8, 1]] },
-    { clazz: ACTOR_TYPES.CANDLE, prob: 10 },
-    { clazz: ACTOR_TYPES.OIL_FLASK, prob: 5 },
-    { clazz: ACTOR_TYPES.TORCH, prob: 5 },
   ],
   countProb: {
     0: 50,
@@ -82,7 +80,6 @@ let lootProbabilities: Actors.IProbabilityMap = {
     { clazz: ACTOR_TYPES.LONGSWORD, prob: [[6, 1]] },
     { clazz: ACTOR_TYPES.IRON_SHIELD, prob: [[7, 1]] },
     { clazz: ACTOR_TYPES.GREATSWORD, prob: [[8, 1]] },
-    { clazz: ACTOR_TYPES.LANTERN, prob: 1 },
     { clazz: ACTOR_TYPES.SUNROD, prob: 1 },
   ],
   maxCount: 4,
@@ -108,12 +105,8 @@ let creatureProbabilities: Actors.IProbabilityMap = {
 let doorProbabilities: Actors.IProbabilityMap = {
   classProb: [
     { clazz: ACTOR_TYPES.WOODEN_DOOR, prob: 80 },
-    { clazz: ACTOR_TYPES.IRON_DOOR, prob: 20 },
+    // { clazz: ACTOR_TYPES.IRON_DOOR, prob: 20 },
   ],
-};
-
-let wallLightProbabilities: Actors.IProbabilityMap = {
-  classProb: [{ clazz: ACTOR_TYPES.WALL_TORCH, prob: 1 }],
 };
 
 let keyProbabilities: Actors.IProbabilityMap = {
@@ -130,6 +123,6 @@ export let dungeonConfig: IBspDungeonConfig = {
   maxTorches: Constants.DUNGEON_MAX_TORCHES,
   minTorches: Constants.DUNGEON_MIN_TORCHES,
   roomMinSize: Constants.ROOM_MIN_SIZE,
-  wallLightProbabilities: wallLightProbabilities,
+  wallLightProbabilities: { classProb: [] },
   guardAI: BEHAVIOR_TREES.GUARD,
 };

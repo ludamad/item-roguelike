@@ -97,7 +97,6 @@ export class JSONSerializer {
     }
     try {
       let json: string = JSON.stringify(object, JSONSerializer.jsonReplacer);
-      console.log({ json: JSON.parse(json) });
       return json;
     } catch (err) {
       console.log(

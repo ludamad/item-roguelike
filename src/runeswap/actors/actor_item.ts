@@ -30,6 +30,7 @@ import {
   SLOT_QUIVER,
   PLAYER_WALK_TIME,
 } from "./base";
+import { findNearestEmpty } from "../map_utils";
 
 /**
  * =============================================================================
@@ -200,22 +201,35 @@ export class Destructible implements IActorFeature {
     if (this.loot) {
       this.dropLoot(owner);
     }
-    if (!this.corpseName) {
-      owner.destroy();
-      return;
+    const { x, y } = owner.pos;
+    // Move the owner temporarily for drop calculations
+    owner.moveTo(-1, -1);
+    for (const item of owner.container.getContent(undefined)) {
+      item.pickable.drop(
+        item,
+        owner,
+        undefined,
+        findNearestEmpty(new Core.Position(x, y))
+      );
     }
-    // save name in case of resurrection
-    this.swapNameAndCorpseName(owner);
-    this.wasBlocking = owner.blocks;
-    this.wasTransparent = owner.transparent;
-    owner.blocks = false;
-    if (!owner.transparent) {
-      Map.Map.current.setTransparent(owner.pos.x, owner.pos.y, true);
-      owner.transparent = true;
-    }
-    if (owner.activable) {
-      owner.activable.deactivate(owner);
-    }
+    // Move the owner back
+    owner.moveTo(x, y);
+    // if (!this.corpseName || owner.container.computeTotalWeight() <= 0) {
+    owner.destroy();
+    //   return;
+    // }
+    // // save name in case of resurrection
+    // this.swapNameAndCorpseName(owner);
+    // this.wasBlocking = owner.blocks;
+    // this.wasTransparent = owner.transparent;
+    // owner.blocks = false;
+    // if (!owner.transparent) {
+    //   Map.Map.current.setTransparent(owner.pos.x, owner.pos.y, true);
+    //   owner.transparent = true;
+    // }
+    // if (owner.activable) {
+    //   owner.activable.deactivate(owner);
+    // }
   }
 
   private swapNameAndCorpseName(owner: Actor) {
@@ -769,7 +783,11 @@ export class Pickable implements IActorFeature {
         (!wearer.destructible || !wearer.destructible.isDead())
       ) {
         Umbra.logger.info(
-          transformMessage("[The actor1] pick[s] [the actor2].", wearer, owner)
+          transformMessage(
+            "[The actor1] pick[s] up [the actor2].",
+            wearer,
+            owner
+          )
         );
       }
 

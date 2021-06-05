@@ -23,6 +23,7 @@ import {
   URL_PARAM_CLEAR_SAVEGAME,
   URL_PARAM_NO_ITEM,
   URL_PARAM_NO_MONSTER,
+  ACTOR_TYPES,
 } from "./base";
 import { StatusPanel } from "./gui_status";
 import { InventoryPanel } from "./gui_inventory";
@@ -31,7 +32,6 @@ import { TilePicker } from "./gui_tilepicker";
 import { NumberSelector } from "./gui_input_number";
 import { MainMenu } from "./gui_menu";
 import { DebugMenu } from "./gui_debug";
-import { ACTOR_TYPES } from "./config_actors";
 import { dungeonConfig } from "./config_dungeons";
 
 /**
@@ -46,7 +46,7 @@ export abstract class DungeonScene
   extends Map.MapScene
   implements Umbra.IEventListener {
   protected _topotologyMap: Map.TopologyMap;
-  protected dungeonLevel: number = 1;
+  public dungeonLevel: number = 1;
 
   constructor() {
     super(
@@ -212,41 +212,7 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
     // starting inventory
     let player: Actors.Actor =
       Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
-    // let torch = Actors.ActorFactory.create(ACTOR_TYPES.TORCH);
-    // if ( torch ) {
-    //     torch.moveTo(player.pos.x, player.pos.y);
-    //     torch.register();
-    //     torch.pickable.pick(torch, player, false);
-    // }
-
-    // a pouch with 5 gold pieces
-    let pouch: Actors.Actor | undefined = Actors.ActorFactory.create(
-      ACTOR_TYPES.POUCH
-    );
-    if (pouch) {
-      Actors.ActorFactory.createInContainer(pouch, [
-        ACTOR_TYPES.GOLD_PIECE,
-        ACTOR_TYPES.GOLD_PIECE,
-        ACTOR_TYPES.GOLD_PIECE,
-        ACTOR_TYPES.GOLD_PIECE,
-        ACTOR_TYPES.GOLD_PIECE,
-      ]);
-    }
-    let bag: Actors.Actor | undefined = Actors.ActorFactory.create(
-      ACTOR_TYPES.BAG
-    );
-    if (bag) {
-      if (pouch) {
-        pouch.pickable.pick(pouch, bag, false);
-      }
-      Actors.ActorFactory.createInContainer(bag, [ACTOR_TYPES.HEALTH_POTION]);
-      bag.moveTo(player.pos.x, player.pos.y);
-    }
-    Actors.ActorFactory.createInContainer(player, [
-      ACTOR_TYPES.MAP_CASE,
-      ACTOR_TYPES.KEY_RING,
-      ACTOR_TYPES.KNIFE,
-    ]);
+    Actors.ActorFactory.createInContainer(player, [ACTOR_TYPES.KNIFE]);
     Actors.Actor.describeCell(player.pos);
   }
 

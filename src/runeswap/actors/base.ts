@@ -3,7 +3,7 @@ import * as Umbra from "../umbra/main";
 import { Actor } from "./actor";
 
 // unlimited fov
-export const FOV_RADIUS: number = 0;
+export const FOV_RADIUS: number = 8;
 
 // some material colors
 export const FROST_COLOR: Core.Color = 0xe0e0ff;
@@ -16,7 +16,7 @@ export const BASE_LIGHT_PATTERN_ASCIICODE: number = 48;
 export const PENUMBRA_THRESHOLD: number = 0.25;
 // character to use for actors in penumbra (63 = '?')
 export const PENUMBRA_ASCIICODE: number = 63;
-export const PLAYER_WALK_TIME: number = 5;
+export const PLAYER_WALK_TIME: number = 10;
 // how many turns you are confused after being stunned
 export const AFTER_STUNNED_CONFUSION_DELAY: number = 3;
 // overencumbered inventory capacity (percentage of capacity)
@@ -73,6 +73,8 @@ export enum PlayerActionEnum {
   SELECT_ITEM,
   // ACTIVATE,
   VALIDATE,
+  AUTOEXPLORE,
+  AUTOFIGHT,
   CANCEL,
 }
 

@@ -392,11 +392,13 @@ export class AbstractDungeonBuilder {
         // no need to check that x,y is a wall cell. see <fixWallItems()>
         item.moveTo(x, y);
       } else {
-        let x = this.rng.getNumber(x1, x2);
-        let y = this.rng.getNumber(y1, y2);
-        if (map.canWalk(x, y)) {
-          item.moveTo(x, y);
-          // TODO else find a walkable cell
+        for (let i = 0; i < 100; i++) {
+          let x = this.rng.getNumber(x1, x2);
+          let y = this.rng.getNumber(y1, y2);
+          if (map.canWalk(x, y)) {
+            item.moveTo(x, y);
+            break;
+          }
         }
       }
     }
