@@ -198,7 +198,7 @@ export interface IDestructibleDef {
   healthPoints?: number;
   /** can use actor1 = the actor owning this destructible and actor2 = the actor wearing actor1 */
   deathMessage?: string;
-  defense?: number;
+  defence?: number;
   qualifiers?: string[];
   /** if no corpse name, actor is destroyed when healthPoints reach 0 */
   corpseName?: string;
@@ -278,7 +278,7 @@ export interface ILightDef {
 export interface IEquipmentDef {
   /** list of slots this item can be equipped on */
   slots: string[];
-  defense?: number;
+  defence?: number;
 }
 
 export interface IRangedDef {

@@ -4,6 +4,7 @@ import * as Actors from "../actors/main";
 import { TopologyMap, TopologyAnalyzer, Connector } from "./map_topology";
 import { Map } from "./map";
 import { PUZZLE_STEP_PROBABILITY } from "./constants";
+import { ACTOR_TYPES } from "../base";
 
 /**
  * ==============================================================================
@@ -32,7 +33,7 @@ export interface IDungeonConfig {
 export class AbstractDungeonBuilder {
   protected rng: Yendor.Random;
   protected config: IDungeonConfig;
-  private dungeonLevel: number;
+  private mapId: number;
   private _topologyMap: TopologyMap;
   private itemProbabilities: Actors.IProbabilityMap;
   private creatureProbabilities: Actors.IProbabilityMap;
@@ -46,7 +47,7 @@ export class AbstractDungeonBuilder {
   }
 
   constructor(dungeonLevel: number, config: IDungeonConfig) {
-    this.dungeonLevel = dungeonLevel;
+    this.mapId = dungeonLevel;
     this.config = config;
     this.itemProbabilities = config.itemProbabilities;
     this.creatureProbabilities = config.creatureProbabilities;
@@ -70,22 +71,18 @@ export class AbstractDungeonBuilder {
     this.digMap(map);
     let analyzer: TopologyAnalyzer = new TopologyAnalyzer();
     // find suitable dungeon entry and exit
-    let player: Actors.Actor =
-      Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
-    let stairsUp: Actors.Actor =
-      Actors.Actor.specialActors[Actors.SpecialActorsEnum.STAIR_UP];
-    let stairsDown: Actors.Actor =
-      Actors.Actor.specialActors[Actors.SpecialActorsEnum.STAIR_DOWN];
+    let [stairsDown]: Actors.Actor[] = map.actorList.filter(
+      ({ name }) => name == ACTOR_TYPES.STAIRS_DOWN
+    );
+    let [stairsUp]: Actors.Actor[] = map.actorList.filter(
+      ({ name }) => name == ACTOR_TYPES.STAIRS_DOWN
+    );
     this._topologyMap = analyzer.buildTopologyMap(map, stairsDown.pos);
-    analyzer.findDungeonExits(player.pos, stairsDown.pos);
-    // move player inventory
-    player.moveTo(player.pos.x, player.pos.y);
+    analyzer.findDungeonExits(stairsUp.pos, stairsDown.pos);
     analyzer.buildPuzzle(
-      this._topologyMap.getObjectId(player.pos),
+      this._topologyMap.getObjectId(stairsUp.pos),
       this._topologyMap.getObjectId(stairsDown.pos)
     );
-    stairsUp.pos.x = player.pos.x;
-    stairsUp.pos.y = player.pos.y;
     this.applyPuzzle();
     this.createWallTorches(map, this.config.minTorches, this.config.maxTorches);
     this.fixWallItems(map);
@@ -142,23 +139,47 @@ export class AbstractDungeonBuilder {
   ) {
     this.dig(map, x1, y1, x2, y2);
     if (first) {
-      // put the player and stairs up in the first room
-      let player: Actors.Actor =
-        Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
-      let stairsUp: Actors.Actor =
-        Actors.Actor.specialActors[Actors.SpecialActorsEnum.STAIR_UP];
-      player.pos.x = Math.floor((x1 + x2) / 2);
-      player.pos.y = Math.floor((y1 + y2) / 2);
-      stairsUp.pos.x = player.pos.x;
-      stairsUp.pos.y = player.pos.y;
+      let [stairsUp]: Actors.Actor[] = map.actorList.filter(
+        ({ name }) => name == ACTOR_TYPES.STAIRS_UP
+      );
+      if (!stairsUp) {
+        stairsUp = Actors.ActorFactory.create(
+          this.mapId,
+          ACTOR_TYPES.STAIRS_UP
+        ) as any;
+      }
+      stairsUp.pos.x = Math.floor((x1 + x2) / 2);
+      stairsUp.pos.y = Math.floor((y1 + y2) / 2);
     } else {
       this.createMonsters(x1, y1, x2, y2, map);
       this.createItems(x1, y1, x2, y2, map);
       // stairs down will be in the last room
-      let stairsDown: Actors.Actor =
-        Actors.Actor.specialActors[Actors.SpecialActorsEnum.STAIR_DOWN];
-      stairsDown.pos.x = Math.floor((x1 + x2) / 2);
-      stairsDown.pos.y = Math.floor((y1 + y2) / 2);
+      let stairs: Actors.Actor[] = map.actorList.filter(
+        ({ name }) => name == ACTOR_TYPES.STAIRS_DOWN
+      );
+      let otherStairs: Actors.Actor[] = map.actorList.filter(
+        ({ name }) => name == ACTOR_TYPES.STAIRS_UP
+      );
+      if (stairs.length === 3 && otherStairs.length < 3) {
+        const stairsUp = Actors.ActorFactory.create(
+          this.mapId,
+          ACTOR_TYPES.STAIRS_UP
+        ) as any;
+        stairsUp.pos.x = Math.floor((x1 + x2) / 2);
+        stairsUp.pos.y = Math.floor((y1 + y2) / 2);
+      } else {
+        let stairsDown: Actors.Actor;
+        if (stairs.length < 3) {
+          stairsDown = Actors.ActorFactory.create(
+            this.mapId,
+            ACTOR_TYPES.STAIRS_DOWN
+          ) as any;
+        } else {
+          stairsDown = stairs[stairs.length - 1];
+        }
+        stairsDown.pos.x = Math.floor((x1 + x2) / 2);
+        stairsDown.pos.y = Math.floor((y1 + y2) / 2);
+      }
     }
   }
 
@@ -166,7 +187,10 @@ export class AbstractDungeonBuilder {
     let doorType: string = <string>(
       this.rng.getRandomChance(this.doorProbabilities)
     );
-    let door: Actors.Actor | undefined = Actors.ActorFactory.create(doorType);
+    let door: Actors.Actor | undefined = Actors.ActorFactory.create(
+      this.mapId,
+      doorType
+    );
     if (door) {
       door.register();
       door.moveTo(pos.x, pos.y);
@@ -174,7 +198,7 @@ export class AbstractDungeonBuilder {
   }
 
   protected getDoor(pos: Core.Position): Actors.Actor | undefined {
-    let doors: Actors.Actor[] = Actors.Actor.list.filter(
+    let doors: Actors.Actor[] = Map.getActors(this.mapId).filter(
       (actor: Actors.Actor) => actor.pos.equals(pos) && actor.isA("door[s]")
     );
     return doors && doors.length === 0 ? undefined : doors[0];
@@ -247,7 +271,7 @@ export class AbstractDungeonBuilder {
       return false;
     }
     return (
-      Actors.Actor.list.filter(
+      map.actorList.filter(
         (actor: Actors.Actor) =>
           actor.pos.x === x && actor.pos.y === y && actor.isA("item[s]")
       ).length === 0
@@ -280,7 +304,12 @@ export class AbstractDungeonBuilder {
     let actorType: string = <string>this.rng.getRandomChance(probabilityMap);
     // TODO AI tile and inventory pickers for intelligent creatures
     if (actorType !== undefined) {
-      return Actors.ActorFactory.create(actorType, undefined, undefined);
+      return Actors.ActorFactory.create(
+        this.mapId,
+        actorType,
+        undefined,
+        undefined
+      );
     }
     return undefined;
   }
@@ -292,17 +321,17 @@ export class AbstractDungeonBuilder {
     y2: number,
     map: Map
   ) {
-    let monsters: Actors.Actor[] = Actors.ActorFactory.createRandomActors(
-      this.creatureProbabilities,
-      this.dungeonLevel
-    );
-    for (let monster of monsters) {
-      let x = this.rng.getNumber(x1, x2);
-      let y = this.rng.getNumber(y1, y2);
-      if (map.canWalk(x, y)) {
-        monster.moveTo(x, y);
-      }
-    }
+    // let monsters: Actors.Actor[] = Actors.ActorFactory.createRandomActors(
+    //   this.creatureProbabilities,
+    //   this.mapId
+    // );
+    // for (let monster of monsters) {
+    //   let x = this.rng.getNumber(x1, x2);
+    //   let y = this.rng.getNumber(y1, y2);
+    //   if (map.canWalk(x, y)) {
+    //     monster.moveTo(x, y);
+    //   }
+    // }
   }
 
   private createWallTorches(map: Map, minCount: number, maxCount: number) {
@@ -343,7 +372,7 @@ export class AbstractDungeonBuilder {
       }
       let floorPos = map.isWallWithAdjacentFloor(x, y);
       if (floorPos !== undefined) {
-        let actorsOnCell: Actors.Actor[] = Actors.Actor.list.filter(
+        let actorsOnCell: Actors.Actor[] = map.actorList.filter(
           (actor: Actors.Actor) => actor.pos.x === x && actor.pos.y === y
         );
         if (actorsOnCell.length === 0) {
@@ -360,7 +389,7 @@ export class AbstractDungeonBuilder {
    * Wall item can end on a floor tile. Move those back to a wall cell.
    */
   private fixWallItems(map: Map) {
-    for (let actor of Actors.Actor.list) {
+    for (let actor of map.actorList) {
       if (
         actor.wallActor &&
         !map.isWallWithAdjacentFloor(actor.pos.x, actor.pos.y)
@@ -383,7 +412,7 @@ export class AbstractDungeonBuilder {
   ) {
     let items: Actors.Actor[] = Actors.ActorFactory.createRandomActors(
       this.itemProbabilities,
-      this.dungeonLevel
+      this.mapId
     );
     for (let item of items) {
       if (item.wallActor) {
@@ -399,6 +428,9 @@ export class AbstractDungeonBuilder {
             item.moveTo(x, y);
             break;
           }
+        }
+        if (!map.canWalk(item.pos.x, item.pos.y)) {
+          console.log("CANT", item.name);
         }
       }
     }
@@ -439,14 +471,16 @@ export class AbstractDungeonBuilder {
   }
 
   private createLoot() {
-    let player: Actors.Actor =
-      Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
-    let playerSectorId: number = this._topologyMap.getObjectId(player.pos);
+    let [stairsUp]: Actors.Actor[] = Map.getActors(this.mapId).filter(
+      ({ name }) => name == ACTOR_TYPES.STAIRS_UP
+    );
+    let entranceSectorId: number = this._topologyMap.getObjectId(stairsUp.pos);
     for (let sector of this._topologyMap.sectors) {
-      if (sector.id !== playerSectorId && sector.isDeadEnd()) {
+      if (sector.id !== entranceSectorId && sector.isDeadEnd()) {
         let container:
           | Actors.Actor
           | undefined = Actors.ActorFactory.createRandomActor(
+          this.mapId,
           this.config.lootContainerType
         );
         if (container) {
@@ -457,7 +491,7 @@ export class AbstractDungeonBuilder {
           container.moveTo(containerPos.x, containerPos.y);
           let items: Actors.Actor[] = Actors.ActorFactory.createRandomActors(
             this.lootProbabilities,
-            this.dungeonLevel
+            this.mapId
           );
           for (let actor of items) {
             actor.moveTo(containerPos.x, containerPos.y);
@@ -465,7 +499,7 @@ export class AbstractDungeonBuilder {
           }
           let guardians: Actors.Actor[] = Actors.ActorFactory.createRandomActors(
             this.creatureProbabilities,
-            this.dungeonLevel
+            this.mapId
           );
           for (let creature of guardians) {
             let pos: Core.Position = this._topologyMap.getRandomPositionInSector(

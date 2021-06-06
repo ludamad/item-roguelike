@@ -65,11 +65,11 @@ export const DUNGEON_MIN_TORCHES: number = 4;
 // how often the world is updated
 export const TICKS_PER_SECOND: number = 10;
 export const TICK_LENGTH: number = 1.0 / TICKS_PER_SECOND;
-export const INVENTORY_MANIPULATION_TIME: number = 2;
+export const INVENTORY_MANIPULATION_TIME: number = 10;
 // xp level required for level 1
-export const XP_BASE_LEVEL: number = 200;
+export const XP_BASE_LEVEL: number = 0;
 // xp level required for level n = BASE_LEVEL + n * NEW_LEVEL
-export const XP_NEW_LEVEL: number = 150;
+export const XP_NEW_LEVEL: number = 50;
 
 // A.I.
 export const SCENT_THRESHOLD: number = 10;
@@ -90,6 +90,7 @@ export const EVENT_OPEN_MAIN_MENU: string = "OPEN_MAIN_MENU";
 export const EVENT_OPEN_DEBUG_MENU: string = "OPEN_DEBUG_MENU";
 export const EVENT_NEW_GAME: string = "NEW_GAME";
 export const EVENT_CHANGE_STATUS: string = "CHANGE_STATUS";
+export const EVENT_USE_PORTAL: string = "USE_PORTAL";
 
 export const enum GameStatus {
   INITIALIZING = 1,
@@ -113,9 +114,6 @@ export const ACTOR_TYPES = {
   CREATURE: "creature[s]",
   HUMANOID: "humanoid[s]",
   HOSTILE_HUMANOID: "hostile humanoid[s]",
-  GOBLIN: "goblin[s]",
-  ORC: "orc[s]",
-  TROLL: "troll[s]",
   HUMAN: "human[s]",
   PLAYER: "player",
   MAGIC: "magic",
@@ -155,7 +153,6 @@ export const ACTOR_TYPES = {
   RANGED: "ranged",
   SHORT_BOW: "short bow[s]",
   LONG_BOW: "long bow[s]",
-  CROSSBOW: "crossbow[s]",
   WAND: "wand[s]",
   WAND_OF_FROST: "wand[s] of frost",
   STAFF: "staff[s]",
@@ -165,9 +162,7 @@ export const ACTOR_TYPES = {
   SUNROD: "sunrod[s]",
   PROJECTILE: "projectile[s]",
   ARROW: "arrow[s]",
-  BONE_ARROW: "bone arrow[s]",
   IRON_ARROW: "iron arrow[s]",
-  BOLT: "bolt[s]",
   KEY: "key[s]",
   DEVICE: "device[s]",
   STAIRS: "stairs",

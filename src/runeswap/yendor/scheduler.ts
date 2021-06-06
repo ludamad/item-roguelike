@@ -16,7 +16,6 @@ export abstract class TimedEntity {
   public getNextActionTime(): number {
     return this._nextActionTime;
   }
-
   /**
    * Function: update
    * Update the entity and call <wait()>.
@@ -43,7 +42,7 @@ export abstract class TimedEntity {
  */
 export class Scheduler {
   private entities: BinaryHeap<TimedEntity>;
-  private paused: boolean = false;
+  private paused: boolean = true;
   /** entity being currently updated */
   private currentEntity: TimedEntity | undefined;
   private currentTime: number = 0;
@@ -60,9 +59,13 @@ export class Scheduler {
   public add(entity: TimedEntity) {
     if (!this.entities.contains(entity)) {
       this.entities.push(entity);
-      if (entity.getNextActionTime() < this.currentTime) {
-        entity.wait(this.currentTime - entity.getNextActionTime());
-      }
+      // Ensure level playing field
+      entity.wait(this.currentTime - entity.getNextActionTime());
+    }
+  }
+  public rawAdd(entity: TimedEntity) {
+    if (!this.entities.contains(entity)) {
+      this.entities.push(entity);
     }
   }
 
@@ -70,6 +73,10 @@ export class Scheduler {
    * Function: addAll
    */
   public addAll(entities: TimedEntity[]) {
+    for (const entity of entities) {
+      // Ensure level playing field
+      entity.wait(this.currentTime - entity.getNextActionTime());
+    }
     this.entities.pushAll(entities);
   }
 
@@ -156,8 +163,10 @@ export class Scheduler {
           !this.paused &&
           this.currentEntity.getNextActionTime() === oldTime
         ) {
-          console.log("WARNING : scheduler : entity didn't wait after update");
-          this.currentEntity.wait(1);
+          console.log("ERROR : scheduler : entity didn't wait after update");
+          console.log(new Error().stack);
+          throw new Error((this.currentEntity as any).name);
+          // this.currentEntity.wait(1);
         }
         entitiesToPushBack.push(this.currentEntity);
       }

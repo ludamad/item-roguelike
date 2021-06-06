@@ -300,7 +300,6 @@ export class InstantHealthEffect extends Effect {
       }
     }
   }
-
   public applyTo(actor: Actor, coef: number = 1.0): EffectResult {
     if (!actor.destructible) {
       return EffectResult.FAILURE;
@@ -341,8 +340,8 @@ export class InstantHealthEffect extends Effect {
     if (actor.destructible.isDead()) {
       return EffectResult.FAILURE;
     }
-    let realDefense: number = actor.destructible.computeRealDefense(actor);
-    let damageDealt = -this._amount * coef - realDefense;
+    let realdefence: number = actor.destructible.computeRealDefence(actor);
+    let damageDealt = -this._amount * coef - realdefence;
     let wearer: Actor | undefined = actor.getWearer();
     if (damageDealt > 0 && this.successMessage) {
       Umbra.logger.info(
@@ -352,7 +351,7 @@ export class InstantHealthEffect extends Effect {
       Umbra.logger.info(transformMessage(this.failureMessage, actor, wearer));
     }
     return Effect.booleanToEffectResult(
-      actor.destructible.takeDamage(actor, -this._amount * coef) > 0,
+      actor.destructible.takeRawDamage(actor, -this._amount * coef) || true,
       this._singleActor
     );
   }
@@ -395,6 +394,10 @@ export class EventEffect extends Effect {
       this.eventType = def.eventType;
       this.eventData = def.eventData;
     }
+  }
+
+  public setEventData(fields: any) {
+    this.eventData = { ...this.eventData, ...fields };
   }
 
   public applyTo(_actor: Actor, _coef: number = 1.0): EffectResult {

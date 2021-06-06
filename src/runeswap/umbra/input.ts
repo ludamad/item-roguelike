@@ -312,7 +312,9 @@ export function onKeydown(event: KeyboardEvent) {
     keyboardStatus[event.keyCode].status = true;
   }
   updateKeyCodeAxes(event.keyCode, true);
-  event.preventDefault();
+  if (!event.shiftKey && !event.altKey && !event.ctrlKey) {
+    event.preventDefault();
+  }
 }
 
 export function onKeyup(event: KeyboardEvent) {

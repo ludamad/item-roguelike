@@ -71,6 +71,7 @@ export class LootPanel extends Gui.Widget implements Actors.ILootHandler {
       )
     ) {
       Umbra.logger.warn("There's nothing to loot!");
+      looter.scheduler.pause();
       return;
     }
     this.looter = looter;

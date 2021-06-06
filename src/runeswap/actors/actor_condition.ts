@@ -145,7 +145,7 @@ export class HealthVariationCondition extends Condition {
         if (this.hpPerTurn > 0) {
           owner.destructible.heal(owner, this.hpPerTurn);
         } else if (this.hpPerTurn < 0) {
-          owner.destructible.takeDamage(owner, -this.hpPerTurn);
+          owner.destructible.takeRawDamage(owner, -this.hpPerTurn);
         }
       }
     }

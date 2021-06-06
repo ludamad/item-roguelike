@@ -43,7 +43,7 @@ import { findNearestEmpty } from "../map_utils";
  * Something that can take damages and heal/repair.
  */
 export class Destructible implements IActorFeature {
-  public defense: number = 0;
+  public defence: number = 0;
   public hp: number;
   public xp: number = 0;
 
@@ -60,7 +60,7 @@ export class Destructible implements IActorFeature {
     if (template) {
       this.hp = template.hp;
       this._maxHp = template._maxHp;
-      this.defense = template.defense;
+      this.defence = template.defence;
       this.corpseChar = template.corpseChar;
       this.corpseName = template.corpseName;
       this.deathMessage = template.deathMessage;
@@ -73,8 +73,8 @@ export class Destructible implements IActorFeature {
         this.hp = def.healthPoints;
         this._maxHp = def.healthPoints;
       }
-      if (def.defense) {
-        this.defense = def.defense;
+      if (def.defence) {
+        this.defence = def.defence;
       }
       if (def.corpseName) {
         this.corpseName = def.corpseName;
@@ -101,6 +101,11 @@ export class Destructible implements IActorFeature {
     return this._maxHp;
   }
 
+  public gainMaxHP(hp: number) {
+    this.hp += hp;
+    this._maxHp += hp;
+  }
+
   public isDead(): boolean {
     return this.hp <= 0;
   }
@@ -121,8 +126,11 @@ export class Destructible implements IActorFeature {
     );
   }
 
-  public computeRealDefense(owner: Actor): number {
-    let realDefense = this.defense;
+  public computeRealDefence(owner: Actor): number {
+    let realdefence = this.defence;
+    if (owner.xpHolder) {
+      realdefence += owner.xpHolder.xpLevel - 1;
+    }
     if (owner.container) {
       // add bonus from equipped items
       // TODO shield can block only one attack per turn
@@ -130,37 +138,37 @@ export class Destructible implements IActorFeature {
       for (let i: number = 0; i < n; i++) {
         let item: Actor | undefined = owner.container.get(i);
         if (item && item.equipment && item.equipment.isEquipped()) {
-          realDefense += item.equipment.getDefenseBonus();
+          realdefence += item.equipment.getdefenceBonus();
         }
       }
     }
-    return realDefense;
+    return realdefence;
   }
 
   /**
-   * Function: takeDamage
+   * Function: takeRawDamage
    * Deals damages to this actor. If health points reach 0, call the die function.
    * Parameters:
    * owner - the actor owning this Destructible
    * damage - amount of damages to deal
    * Returns:
-   * the actual amount of damage taken
+   * was this fatal?
    */
-  public takeDamage(owner: Actor, damage: number): number {
+  public takeRawDamage(owner: Actor, damage: number): boolean {
     if (this.isDead()) {
-      return 0;
+      return false;
     }
-    damage -= this.computeRealDefense(owner);
     if (damage > 0) {
       this.hp -= damage;
       if (this.isDead()) {
         this.hp = 0;
         this.die(owner);
+        return true;
       }
     } else {
       damage = 0;
     }
-    return damage;
+    return false;
   }
 
   /**
@@ -250,7 +258,7 @@ export class Destructible implements IActorFeature {
     owner.blocks = this.wasBlocking;
     owner.transparent = this.wasTransparent;
     if (!owner.transparent) {
-      Map.Map.current.setTransparent(owner.pos.x, owner.pos.y, false);
+      owner.map.setTransparent(owner.pos.x, owner.pos.y, false);
     }
     if (owner.activable) {
       if (!owner.equipment || owner.equipment.isEquipped()) {
@@ -303,7 +311,11 @@ export class Attacker implements IActorFeature {
    */
   public attack(owner: Actor, target: Actor) {
     if (target.destructible && !target.destructible.isDead()) {
-      let damage = this.power - target.destructible.computeRealDefense(target);
+      const basePower = owner.xpHolder ? 4 + owner.xpHolder.xpLevel : 0;
+      let damage = Math.max(
+        0,
+        this.power + basePower - target.destructible.computeRealDefence(target)
+      );
       let msg: string = "[The actor1] attack[s] [the actor2]";
       let logLevel: Umbra.LogLevel = Umbra.LogLevel.INFO;
       let gainedXp: number = 0;
@@ -324,8 +336,11 @@ export class Attacker implements IActorFeature {
         msg += " but it has no effect!";
       }
       Umbra.logger.log(logLevel, transformMessage(msg, owner, target));
-      target.destructible.takeDamage(target, this.power);
+      target.destructible.takeRawDamage(target, damage);
       if (gainedXp > 0) {
+        if (!target.destructible.isDead()) {
+          throw new Error();
+        }
         owner.xpHolder.addXp(owner, gainedXp);
       }
     }
@@ -467,6 +482,29 @@ export class Container implements IActorFeature {
     return Actor.fromId(this.actorIds[index]);
   }
 
+  public containsCriteria(
+    cond: (actor: Actor) => boolean,
+    recursive: boolean
+  ): boolean {
+    for (let i: number = 0, n: number = this.size(); i < n; i++) {
+      if (cond(Actor.idMap[this.actorIds[i]])) {
+        return true;
+      }
+    }
+    if (recursive) {
+      for (let i: number = 0, n: number = this.size(); i < n; i++) {
+        let item: Actor | undefined = Actor.fromId(this.actorIds[i]);
+        if (
+          item &&
+          item.container &&
+          item.container.containsCriteria(cond, true)
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
   public contains(actorId: ActorId, recursive: boolean): boolean {
     for (let i: number = 0, n: number = this.size(); i < n; i++) {
       if (actorId === this.actorIds[i]) {
@@ -943,13 +981,13 @@ export class Pickable implements IActorFeature {
 export class Equipment implements IActorFeature {
   private slots: string[];
   private equipped: boolean = false;
-  private defenseBonus: number = 0;
+  private defenceBonus: number = 0;
 
   constructor(def: IEquipmentDef) {
     if (def) {
       this.slots = def.slots;
-      if (def.defense) {
-        this.defenseBonus = def.defense;
+      if (def.defence) {
+        this.defenceBonus = def.defence;
       }
     }
   }
@@ -961,8 +999,8 @@ export class Equipment implements IActorFeature {
   public getSlots(): string[] {
     return this.slots;
   }
-  public getDefenseBonus(): number {
-    return this.defenseBonus;
+  public getdefenceBonus(): number {
+    return this.defenceBonus;
   }
 
   /**
@@ -1279,7 +1317,7 @@ export class Activable implements IActorFeature {
   private active: boolean = false;
   private activateMessage: string | undefined;
   private deactivateMessage: string | undefined;
-  private onActivateEffector: Effector;
+  public onActivateEffector: Effector;
   private type: ActivableTypeEnum;
 
   constructor(def: IActivableDef) {
@@ -1464,7 +1502,7 @@ export class Door extends Activable {
 
   public activate(owner: Actor, activator?: Actor): boolean {
     if (super.activate(owner, activator)) {
-      let currentMap: Map.Map = Map.Map.current;
+      let currentMap: Map.Map = owner.map;
       owner.ch = "/";
       owner.blocks = false;
       owner.transparent = true;
@@ -1477,7 +1515,7 @@ export class Door extends Activable {
 
   public deactivate(owner: Actor): boolean {
     // don't close if there's a living actor on the cell
-    let currentMap: Map.Map = Map.Map.current;
+    let currentMap: Map.Map = owner.map;
     if (!currentMap.canWalk(owner.pos.x, owner.pos.y)) {
       Umbra.logger.info(transformMessage("Cannot close [the actor1]", owner));
       return false;

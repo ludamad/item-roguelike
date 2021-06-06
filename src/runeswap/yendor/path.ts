@@ -59,7 +59,8 @@ export class PathFinder {
    */
   public getPath(
     from: Core.Position,
-    to: Core.Position
+    to: Core.Position,
+    maxSteps: number = 0
   ): Core.Position[] | undefined {
     let closedSet: Core.Position[] = [];
     let cameFrom: { [index: number]: Core.Position } = {};

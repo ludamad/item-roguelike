@@ -27,6 +27,7 @@ import {
   MAX_GUARD_RANGE,
   CTX_KEY_GUARD,
   ACTOR_TYPES,
+  EVENT_USE_PORTAL,
 } from "./base";
 import { registerPersistentClasses } from "./config_persistent";
 import {
@@ -36,6 +37,7 @@ import {
   ITeleportEffectDef,
   PLAYER_WALK_TIME,
 } from "./actors/main";
+import { registerHostileDefs } from "./hostile";
 
 // persistent classes must be registered before actors
 // as behavior trees are created using the JSONSerializer
@@ -122,71 +124,71 @@ Actors.ActorFactory.registerActorDef({
   prototypes: [ACTOR_TYPES.HUMANOID],
 });
 
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.GOBLIN,
-  ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: PLAYER_WALK_TIME },
-  attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 1 },
-  ch: "g",
-  color: 0x3f7f3f,
-  destructible: {
-    corpseName: "goblin corpse",
-    defense: 0,
-    healthPoints: 3,
-    loot: {
-      classProb: [
-        { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 1 },
-        { clazz: undefined, prob: 3 },
-      ],
-    },
-    xp: 10,
-  },
-  prototypes: [ACTOR_TYPES.HOSTILE_HUMANOID],
-});
+// Actors.ActorFactory.registerActorDef({
+//   name: ACTOR_TYPES.GOBLIN,
+//   ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: PLAYER_WALK_TIME },
+//   attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 1 },
+//   ch: "g",
+//   color: 0x3f7f3f,
+//   destructible: {
+//     corpseName: "goblin corpse",
+//     defence: 0,
+//     healthPoints: 3,
+//     loot: {
+//       classProb: [
+//         { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 1 },
+//         { clazz: undefined, prob: 3 },
+//       ],
+//     },
+//     xp: 10,
+//   },
+//   prototypes: [ACTOR_TYPES.HOSTILE_HUMANOID],
+// });
 
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.ORC,
-  ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: PLAYER_WALK_TIME },
-  attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 2 },
-  ch: "o",
-  color: 0x3f7f3f,
-  destructible: {
-    corpseName: "dead orc",
-    defense: 0,
-    healthPoints: 9,
-    loot: {
-      classProb: [
-        { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 1 },
-        { clazz: ACTOR_TYPES.POTION, prob: 1 },
-      ],
-      countProb: { 0: 30, 1: 50, 2: 20 },
-    },
-    xp: 35,
-  },
-  prototypes: [ACTOR_TYPES.HOSTILE_HUMANOID],
-});
+// Actors.ActorFactory.registerActorDef({
+//   name: ACTOR_TYPES.ORC,
+//   ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: PLAYER_WALK_TIME },
+//   attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 2 },
+//   ch: "o",
+//   color: 0x3f7f3f,
+//   destructible: {
+//     corpseName: "dead orc",
+//     defence: 0,
+//     healthPoints: 9,
+//     loot: {
+//       classProb: [
+//         { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 1 },
+//         { clazz: ACTOR_TYPES.POTION, prob: 1 },
+//       ],
+//       countProb: { 0: 30, 1: 50, 2: 20 },
+//     },
+//     xp: 35,
+//   },
+//   prototypes: [ACTOR_TYPES.HOSTILE_HUMANOID],
+// });
 
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.TROLL,
-  ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: PLAYER_WALK_TIME },
-  attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 3 },
-  blockSight: true,
-  ch: "T",
-  color: 0x007f00,
-  destructible: {
-    corpseName: "troll carcass",
-    defense: 1,
-    healthPoints: 15,
-    loot: {
-      classProb: [
-        { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 1 },
-        { clazz: ACTOR_TYPES.POTION, prob: 1 },
-      ],
-      countProb: { 0: 15, 1: 60, 2: 25 },
-    },
-    xp: 100,
-  },
-  prototypes: [ACTOR_TYPES.HOSTILE_HUMANOID],
-});
+// Actors.ActorFactory.registerActorDef({
+//   name: ACTOR_TYPES.TROLL,
+//   ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: PLAYER_WALK_TIME },
+//   attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 3 },
+//   blockSight: true,
+//   ch: "T",
+//   color: 0x007f00,
+//   destructible: {
+//     corpseName: "troll carcass",
+//     defence: 1,
+//     healthPoints: 15,
+//     loot: {
+//       classProb: [
+//         { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 1 },
+//         { clazz: ACTOR_TYPES.POTION, prob: 1 },
+//       ],
+//       countProb: { 0: 15, 1: 60, 2: 25 },
+//     },
+//     xp: 100,
+//   },
+//   prototypes: [ACTOR_TYPES.HOSTILE_HUMANOID],
+// });
 
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.HUMAN,
@@ -210,7 +212,7 @@ Actors.ActorFactory.registerActorDef({
   attacker: { attackTime: Actors.PLAYER_WALK_TIME, hitPoints: 2 },
   blockWalk: false,
   color: 0xffffff,
-  destructible: { corpseName: "your cadaver", defense: 0, healthPoints: 30 },
+  destructible: { corpseName: "your cadaver", defence: 0, healthPoints: 30 },
   light: {
     color: 0xffffff,
     falloffType: Actors.LightFalloffTypeEnum.NORMAL,
@@ -518,7 +520,7 @@ Actors.ActorFactory.registerActorDef({
 
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.KNIFE,
-  attacker: { attackTime: 3, hitPoints: 3 },
+  attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 3 },
   equipment: { slots: [Actors.SLOT_RIGHT_HAND] },
   pickable: {
     onThrowEffector: {
@@ -539,7 +541,7 @@ Actors.ActorFactory.registerActorDef({
 
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.SHORT_SWORD,
-  attacker: { attackTime: 4, hitPoints: 4 },
+  attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 4 },
   equipment: { slots: [Actors.SLOT_RIGHT_HAND] },
   pickable: {
     onThrowEffector: {
@@ -560,7 +562,7 @@ Actors.ActorFactory.registerActorDef({
 
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.LONGSWORD,
-  attacker: { attackTime: 5, hitPoints: 6 },
+  attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 6 },
   equipment: { slots: [Actors.SLOT_RIGHT_HAND] },
   pickable: {
     onThrowEffector: {
@@ -581,7 +583,7 @@ Actors.ActorFactory.registerActorDef({
 
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.GREATSWORD,
-  attacker: { attackTime: 6, hitPoints: 10 },
+  attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 10 },
   equipment: { slots: [Actors.SLOT_BOTH_HANDS] },
   pickable: {
     onThrowEffector: {
@@ -630,7 +632,7 @@ Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.WOODEN_SHIELD,
   color: WOOD_COLOR,
   equipment: {
-    defense: 1,
+    defence: 1,
     slots: [Actors.SLOT_LEFT_HAND],
   },
   prototypes: [ACTOR_TYPES.SHIELD],
@@ -640,7 +642,7 @@ Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.IRON_SHIELD,
   color: IRON_COLOR,
   equipment: {
-    defense: 1.5,
+    defence: 1.5,
     slots: [Actors.SLOT_LEFT_HAND],
   },
   prototypes: [ACTOR_TYPES.SHIELD],
@@ -663,34 +665,13 @@ Actors.ActorFactory.registerActorDef({
 });
 
 Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.BONE_ARROW,
-  color: BONE_COLOR,
-  pickable: {
-    onThrowEffector: {
-      destroyOnEffect: false,
-      effect: <IInstantHealthEffectDef>{
-        amount: -1,
-        successMessage: "The arrow hits [the actor1] for [value1] points.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
-        singleActor: true,
-      },
-      targetSelector: {
-        method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
-      },
-    },
-    weight: 0.1,
-  },
-  prototypes: [ACTOR_TYPES.ARROW],
-});
-
-Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.IRON_ARROW,
   color: WOOD_COLOR,
   pickable: {
     onThrowEffector: {
-      destroyOnEffect: false,
+      destroyOnEffect: true,
       effect: <IInstantHealthEffectDef>{
-        amount: -1.25,
+        amount: -2,
         successMessage: "The arrow hits [the actor1] for [value1] points.",
         type: Actors.EffectTypeEnum.INSTANT_HEALTH,
         singleActor: true,
@@ -702,27 +683,6 @@ Actors.ActorFactory.registerActorDef({
     weight: 0.1,
   },
   prototypes: [ACTOR_TYPES.ARROW],
-});
-
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.BOLT,
-  color: IRON_COLOR,
-  pickable: {
-    onThrowEffector: {
-      destroyOnEffect: false,
-      effect: <IInstantHealthEffectDef>{
-        amount: -0.5,
-        successMessage: "The bolt hits [the actor1] for [value1] points.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
-        singleActor: true,
-      },
-      targetSelector: {
-        method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
-      },
-    },
-    weight: 0.1,
-  },
-  prototypes: [ACTOR_TYPES.PROJECTILE],
 });
 
 Actors.ActorFactory.registerActorDef({
@@ -755,18 +715,6 @@ Actors.ActorFactory.registerActorDef({
     loadTime: 6,
     projectileType: ACTOR_TYPES.ARROW,
     range: 30,
-  },
-});
-
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.CROSSBOW,
-  equipment: { slots: [Actors.SLOT_RIGHT_HAND] },
-  prototypes: [ACTOR_TYPES.RANGED],
-  ranged: {
-    damageCoef: 8,
-    loadTime: 5,
-    projectileType: ACTOR_TYPES.BOLT,
-    range: 10,
   },
 });
 
@@ -956,8 +904,26 @@ Actors.ActorFactory.registerActorDef({
 
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.STAIRS_UP,
+  // activable: {
+  //   activateMessage: "The stairs have collapsed. You can't go up anymore...",
+  //   type: Actors.ActivableTypeEnum.SINGLE,
+  // },
   activable: {
-    activateMessage: "The stairs have collapsed. You can't go up anymore...",
+    onActivateEffector: {
+      destroyOnEffect: false,
+      effect: <IEventEffectDef>{
+        eventData: {
+          mapIdOffset: -1,
+          portalType: ACTOR_TYPES.STAIRS_DOWN,
+          portalVariant: 0,
+        },
+        eventType: EVENT_USE_PORTAL,
+        type: Actors.EffectTypeEnum.EVENT,
+      },
+      targetSelector: {
+        method: Actors.TargetSelectionMethodEnum.WEARER,
+      },
+    },
     type: Actors.ActivableTypeEnum.SINGLE,
   },
   ch: "<",
@@ -970,8 +936,12 @@ Actors.ActorFactory.registerActorDef({
     onActivateEffector: {
       destroyOnEffect: false,
       effect: <IEventEffectDef>{
-        eventData: GameStatus.NEXT_LEVEL,
-        eventType: EVENT_CHANGE_STATUS,
+        eventData: {
+          mapIdOffset: +1,
+          portalType: ACTOR_TYPES.STAIRS_UP,
+          portalVariant: 0,
+        },
+        eventType: EVENT_USE_PORTAL,
         type: Actors.EffectTypeEnum.EVENT,
       },
       targetSelector: {
@@ -983,3 +953,5 @@ Actors.ActorFactory.registerActorDef({
   ch: ">",
   prototypes: [ACTOR_TYPES.STAIRS],
 });
+
+registerHostileDefs();

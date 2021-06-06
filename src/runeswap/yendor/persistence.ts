@@ -64,6 +64,10 @@ export interface IPersister {
  * All persisted class must be registered as I didn't find a way to get the class from its name with ES6 modules
  */
 export class Persistence {
+  public static registerConstructor(className: string, construct: () => any) {
+    Persistence.constructors[className] = construct;
+  }
+
   public static registerClass(clas: any) {
     Persistence.classes[clas.name] = clas;
   }
@@ -72,6 +76,11 @@ export class Persistence {
     return Persistence.classes[name];
   }
 
+  public static getConstructor(name: string) {
+    return Persistence.constructors[name];
+  }
+
+  private static constructors: { [index: string]: any } = {};
   private static classes: { [index: string]: any } = {};
 }
 
@@ -82,14 +91,16 @@ export class JSONSerializer {
     }
     // TODO use a JSON reviver to skip intermediate jsonData step
     let jsonData: any = JSON.parse(json);
-    if (!jsonData) {
+    if (jsonData === null || jsonData === undefined) {
       return undefined;
     }
     return JSONSerializer.loadFromData(jsonData, object);
   }
 
   public static object2Json(object: any): string | undefined {
-    if (typeof object === "string") {
+    if (typeof object === "number") {
+      return object.toString();
+    } else if (typeof object === "string") {
       return object;
     } else if (JSONSerializer.needsClassName(object)) {
       // store the object's class to be able to recreate it with the right prototype when loading
@@ -156,11 +167,18 @@ export class JSONSerializer {
         if (clas) {
           object = new clas();
         } else {
-          console.log(
-            "Error reading from persistence : unknown class " +
-              jsonData.className
+          let construct: any = Persistence.getConstructor(
+            <string>jsonData.className
           );
-          return undefined;
+          if (construct) {
+            object = construct();
+          } else {
+            console.log(
+              "Error reading from persistence : unknown class " +
+                jsonData.className
+            );
+            return undefined;
+          }
         }
       }
     }

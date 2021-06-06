@@ -6,12 +6,17 @@ import { ACTOR_TYPES } from "./base";
 
 let itemProbabilities: Actors.IProbabilityMap = {
   classProb: [
-    { clazz: ACTOR_TYPES.BONE_ARROW, prob: 5 },
-    { clazz: ACTOR_TYPES.IRON_ARROW, prob: 5 },
-    { clazz: ACTOR_TYPES.BOLT, prob: 5 },
-    { clazz: ACTOR_TYPES.SHORT_BOW, prob: 1 },
-    { clazz: ACTOR_TYPES.LONG_BOW, prob: [[5, 1]] },
-    { clazz: ACTOR_TYPES.CROSSBOW, prob: 1 },
+    // { clazz: ACTOR_TYPES.IRON_ARROW, prob: 5 },
+    { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 100 },
+    {
+      clazz: ACTOR_TYPES.HEALTH_POTION,
+      prob: [
+        [0, 20],
+        [5, 15],
+      ],
+    },
+    // { clazz: ACTOR_TYPES.SHORT_BOW, prob: 1 },
+    // { clazz: ACTOR_TYPES.LONG_BOW, prob: [[5, 1]] },
     {
       clazz: ACTOR_TYPES.SHORT_SWORD,
       prob: [
@@ -46,19 +51,18 @@ let lootProbabilities: Actors.IProbabilityMap = {
         [5, 15],
       ],
     },
-    {
-      clazz: ACTOR_TYPES.REGENERATION_POTION,
-      prob: [
-        [0, 20],
-        [5, 15],
-      ],
-    },
+    // {
+    //   clazz: ACTOR_TYPES.REGENERATION_POTION,
+    //   prob: [
+    //     [0, 20],
+    //     [5, 15],
+    //   ],
+    // },
     { clazz: ACTOR_TYPES.SCROLL_OF_LIGHTNING_BOLT, prob: [[3, 10]] },
     { clazz: ACTOR_TYPES.SCROLL_OF_FIREBALL, prob: 7 },
     { clazz: ACTOR_TYPES.SCROLL_OF_CONFUSION, prob: 7 },
     { clazz: ACTOR_TYPES.SHORT_BOW, prob: 1 },
     { clazz: ACTOR_TYPES.LONG_BOW, prob: [[5, 1]] },
-    { clazz: ACTOR_TYPES.CROSSBOW, prob: 1 },
     {
       clazz: ACTOR_TYPES.SHORT_SWORD,
       prob: [
@@ -88,10 +92,10 @@ let lootProbabilities: Actors.IProbabilityMap = {
 
 let creatureProbabilities: Actors.IProbabilityMap = {
   classProb: [
-    { clazz: ACTOR_TYPES.GOBLIN, prob: 60 },
-    { clazz: ACTOR_TYPES.ORC, prob: 30 },
+    { clazz: "hobgoblin[s]", prob: 60 },
+    { clazz: "orc[s]", prob: 30 },
     {
-      clazz: ACTOR_TYPES.TROLL,
+      clazz: "troll[s]",
       prob: [
         [3, 10],
         [5, 20],
@@ -120,8 +124,8 @@ export let dungeonConfig: IBspDungeonConfig = {
   keyProbabilities: keyProbabilities,
   lootContainerType: ACTOR_TYPES.STATIC_CONTAINER,
   lootProbabilities: lootProbabilities,
-  maxTorches: Constants.DUNGEON_MAX_TORCHES,
-  minTorches: Constants.DUNGEON_MIN_TORCHES,
+  maxTorches: 0, // No torches
+  minTorches: 0,
   roomMinSize: Constants.ROOM_MIN_SIZE,
   wallLightProbabilities: { classProb: [] },
   guardAI: BEHAVIOR_TREES.GUARD,

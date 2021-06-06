@@ -149,10 +149,10 @@ export class StatusPanel
       Constants.XP_BAR_BACKGROUND,
       Constants.XP_BAR_FOREGROUND
     );
-    this.console.print(1, 3, "FLOOR " + getEngine().dungeonLevel);
+    this.console.print(1, 4, "FLOOR " + getEngine().dungeonLevel);
     this.console.print(
       1,
-      4,
+      5,
       "CAPACITY " +
         player.container.computeTotalWeight().toFixed(1) +
         "/" +

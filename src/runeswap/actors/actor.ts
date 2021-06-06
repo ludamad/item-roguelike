@@ -22,6 +22,7 @@ import {
 import { BaseAi, XpHolder } from "./actor_creature";
 import { Light } from "./actor_light";
 import { ActorFactory } from "./actor_factory";
+import { TilingSprite } from "pixi.js";
 
 /**
  * Probability for an actor class to spawn.
@@ -56,10 +57,15 @@ export interface IProbabilityMap {
  */
 export enum SpecialActorsEnum {
   PLAYER = 1,
-  // TODO replace stairs up by messager, stairs down by teleporter
-  // keep stairs for multi-level maps
-  STAIR_UP,
-  STAIR_DOWN,
+}
+
+function remove<T>(array: T[], value: T) {
+  // You can use the indexOf method like this:
+
+  const index = array.indexOf(value);
+  if (index !== -1) {
+    array.splice(index, 1);
+  }
 }
 
 /**
@@ -69,20 +75,55 @@ export enum SpecialActorsEnum {
  * keep the json serializer from working. Instead, hold ActorId and use ActorManager.getActor()
  */
 export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
-  /** list of all current actors in the game */
-  public static list: Actor[] = [];
   /** fast way to retrieve some special actors like the player. SpecialActor => Actor */
   public static specialActors: { [index: string]: Actor } = {};
+  // TODO do we need multiple schedulers?
   public static scheduler: Yendor.Scheduler = new Yendor.Scheduler();
   public static lootRng: Yendor.Random = new Yendor.CMWCRandom();
+  public static idMap: { [index: number]: Actor } = {};
 
   public static fromId(id: ActorId | undefined): Actor | undefined {
     if (id === undefined) {
       return undefined;
     }
-    return Actor.map[id];
+    return Actor.idMap[id];
+  }
+  public get map(): Map.Map {
+    return Map.Map.mapDb[this.mapId];
+  }
+  public static get player(): Actor {
+    return Actor.specialActors[SpecialActorsEnum.PLAYER];
   }
 
+  public static get list(): Actor[] {
+    return Map.Map.currentActors;
+  }
+  public static getScheduler(mapId: number): Yendor.Scheduler {
+    // while (Actor.schedulers.length <= mapId) {
+    //   Actor.schedulers.push(new Yendor.Scheduler());
+    // }
+    // return Actor.schedulers[mapId];
+    return this.scheduler;
+  }
+  public static get currentScheduler(): Yendor.Scheduler {
+    // return this.getScheduler(Map.Map.currentIndex);
+    return Actor.scheduler;
+  }
+  public static resetCurrentScheduler() {
+    Actor.scheduler = new Yendor.Scheduler();
+  }
+
+  public get scheduler(): Yendor.Scheduler {
+    // return Actor.getScheduler(this.mapId);
+    return Actor.scheduler;
+  }
+
+  public changeMap(newMapId: number) {
+    remove(Map.Map.getActors(this.mapId), this);
+    Map.Map.getActors(newMapId).push(this);
+    this.mapId = newMapId;
+    return Map.Map.getActors(this.mapId);
+  }
   /**
    * Function: findClosestActor
    * In the `actors` array, find the closest creature (except the player) from position `pos` within `range`.
@@ -116,17 +157,16 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
   public static load(persister: Yendor.IPersister): Promise<void> {
     return new Promise<void>((resolve) => {
       persister.loadFromKey(PERSISTENCE_ACTORS_KEY).then((_value) => {
-        for (let actor of Actor.list) {
-          let specialActor: SpecialActorsEnum | undefined;
-          if (actor.isA("player")) {
-            specialActor = SpecialActorsEnum.PLAYER;
-          } else if (actor.isA("stairs up")) {
-            specialActor = SpecialActorsEnum.STAIR_UP;
-          } else if (actor.isA("stairs down")) {
-            specialActor = SpecialActorsEnum.STAIR_DOWN;
-          }
-          if (specialActor !== undefined) {
-            Actor.specialActors[specialActor] = actor;
+        Map.Map.actorsDb = _value;
+        for (let actors of Map.Map.actorsDb) {
+          for (let actor of actors) {
+            let specialActor: SpecialActorsEnum | undefined;
+            if (actor.isA("player")) {
+              specialActor = SpecialActorsEnum.PLAYER;
+            }
+            if (specialActor !== undefined) {
+              Actor.specialActors[specialActor] = actor;
+            }
           }
         }
         resolve();
@@ -151,13 +191,11 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
     }
   }
 
-  /** associative map actorId => Actor */
-  private static map: { [index: number]: Actor } = {};
-
   /** the name to be used by mouse look or the inventory screen */
   public type: string;
   public name: string;
   public pluralName: string;
+  public mapId: number;
   /** the color associated with this actor's symbol */
   public col: Core.Color;
   /** whether you can walk on the tile where this actor is */
@@ -186,28 +224,32 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
     return this._readableId;
   }
 
-  constructor(readableId?: string) {
+  constructor(mapId?: number, readableId?: string) {
     super();
-    this._pos = new Core.Position();
-    if (readableId) {
-      // readableId is undefined when loading a game
-      this._readableId = readableId;
-      this._id = Core.crc32(this._readableId);
-      Actor.map[this._id] = this;
-      if (Umbra.logger.isDebugEnabled()) {
-        Umbra.logger.debug(
-          "new actor " + this.readableId + "[" + this._id.toString(16) + "]"
-        );
-      }
+    if (mapId === undefined || readableId === undefined) {
+      // We are loading a game - bail out and let the JSON fields
+      // get copied over
+      // TODO cleaner constructor
+      return;
     }
-    Actor.list.push(this);
+    this.mapId = mapId;
+    this._pos = new Core.Position();
+    this._readableId = readableId;
+    this._id = Core.crc32(this._readableId);
+    Actor.idMap[this._id] = this;
+    if (Umbra.logger.isDebugEnabled()) {
+      Umbra.logger.debug(
+        "new actor " + this.readableId + "[" + this._id.toString(16) + "]"
+      );
+    }
+    Map.Map.getActors(mapId).push(this);
   }
 
   /** register this actor in the scheduler */
   public register() {
     // TODO clean this mess!
     if (this.ai) {
-      Actor.scheduler.add(this);
+      Actor.getScheduler(this.mapId).add(this);
     }
     if (this.light && (!this.activable || this.activable.isActive())) {
       Umbra.EventManager.publishEvent(EVENT_LIGHT_ONOFF, this);
@@ -222,15 +264,19 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
    * Also, when loading from persistence, constructor is called without parameters
    */
   public postLoad() {
-    Actor.map[this._id] = this;
-    this.register();
+    Actor.idMap[this._id] = this;
+    if (this.ai) {
+      Actor.getScheduler(this.mapId).rawAdd(this);
+    }
+    if (this.light && (!this.activable || this.activable.isActive())) {
+      Umbra.EventManager.publishEvent(EVENT_LIGHT_ONOFF, this);
+    }
+    // possibly set the map transparency
+    this.moveTo(this.pos.x, this.pos.y);
     // rebuild container -> listener backlinks
     if (this.ai && this.container) {
       this.container.setListener(this.ai);
     }
-    // if (this.light && (!this.activable || this.activable.isActive())) {
-    //     Umbra.EventManager.publishEvent(EVENT_LIGHT_ONOFF, this);
-    // }
   }
 
   /**
@@ -262,7 +308,7 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
       wearer.container.remove(this.id, wearer);
     }
     if (this.ai) {
-      Actor.scheduler.remove(this);
+      Actor.getScheduler(this.mapId).remove(this);
     }
     if (this.activable && this.activable.isActive() && this.light) {
       this.activable.deactivate(this);
@@ -277,7 +323,7 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
         --i;
       }
     }
-    delete Actor.map[this._id];
+    delete Actor.idMap[this._id];
     let index = Actor.list.indexOf(this);
     if (index !== -1) {
       Actor.list.splice(index, 1);
@@ -327,10 +373,10 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
     return this._pos;
   }
   public moveTo(x: number, y: number) {
-    if (!this.transparent && Map.Map.current) {
-      Map.Map.current.setTransparent(this.pos.x, this.pos.y, true);
+    if (!this.transparent) {
+      this.map.setTransparent(this.pos.x, this.pos.y, true);
       this._pos.moveTo(x, y);
-      Map.Map.current.setTransparent(this.pos.x, this.pos.y, false);
+      this.map.setTransparent(this.pos.x, this.pos.y, false);
     } else {
       this._pos.moveTo(x, y);
     }
@@ -406,7 +452,7 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
    */
   public getWearer(): Actor | undefined {
     if (this.pickable && this.pickable.containerId) {
-      return Actor.map[this.pickable.containerId];
+      return Actor.idMap[this.pickable.containerId];
     }
     return undefined;
   }

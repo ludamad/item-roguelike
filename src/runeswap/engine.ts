@@ -2,9 +2,18 @@ import * as Yendor from "./yendor/main";
 import * as Umbra from "./umbra/main";
 import * as Gui from "./gui/main";
 import * as Actors from "./actors/main";
-import * as Map from "./map/main";
+import {
+  BasicMapShader,
+  BspDungeonBuilder,
+  DungeonRendererNode,
+  LightDungeonShader,
+  Map,
+  MapScene,
+  TopologyMap,
+} from "./map/main";
 import {
   EVENT_CHANGE_STATUS,
+  EVENT_USE_PORTAL,
   EVENT_NEW_GAME,
   EVENT_OPEN_MAIN_MENU,
   GameStatus,
@@ -33,6 +42,7 @@ import { NumberSelector } from "./gui_input_number";
 import { MainMenu } from "./gui_menu";
 import { DebugMenu } from "./gui_debug";
 import { dungeonConfig } from "./config_dungeons";
+import { Actor, ActorId, EventEffect } from "./actors/main";
 
 /**
  * Property: SAVEFILE_VERSION
@@ -43,16 +53,14 @@ import { dungeonConfig } from "./config_dungeons";
 const SAVEFILE_VERSION: string = "18";
 
 export abstract class DungeonScene
-  extends Map.MapScene
+  extends MapScene
   implements Umbra.IEventListener {
-  protected _topotologyMap: Map.TopologyMap;
+  protected _topologyMaps: TopologyMap[] = [];
   public dungeonLevel: number = 1;
 
   constructor() {
     super(
-      new Map.DungeonRendererNode(
-        new Map.LightDungeonShader(new Map.BasicMapShader())
-      ),
+      new DungeonRendererNode(new LightDungeonShader(new BasicMapShader())),
       new Yendor.IndexedDbPersister()
     );
     dungeonConfig.noItem = Yendor.urlParams[URL_PARAM_NO_ITEM] !== undefined;
@@ -60,39 +68,15 @@ export abstract class DungeonScene
       Yendor.urlParams[URL_PARAM_NO_MONSTER] !== undefined;
   }
 
+  get map(): Map {
+    return Map.current;
+  }
   // singleton getters
-  get topologyMap() {
-    return this._topotologyMap;
+  get topologyMap(): TopologyMap {
+    return Map.current.topology;
   }
   public onInit(): void {
     super.onInit();
-  }
-
-  public newLevel() {
-    // remove all actors but the player and its inventory (except unused keys)
-    let player: Actors.Actor =
-      Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
-    let toRemove: Actors.Actor[] = [];
-    for (let actor of Actors.Actor.list) {
-      if (
-        actor !== player &&
-        (actor.isA("key[s]") || !player.contains(actor.id, true))
-      ) {
-        toRemove.push(actor);
-      }
-    }
-    for (let actor of toRemove) {
-      actor.destroy();
-    }
-    this.createStairs();
-  }
-
-  public newGame() {
-    while (Actors.Actor.list.length > 0) {
-      Actors.Actor.list[Actors.Actor.list.length - 1].destroy();
-    }
-    this.createStairs();
-    this.createPlayer();
   }
 
   /**
@@ -100,27 +84,28 @@ export abstract class DungeonScene
    * Create the actors for up and down stairs. The position is not important,
    * actors will be placed by the dungeon builder.
    */
-  public createStairs() {
+  public createStairs(mapId: number) {
     let stairUp: Actors.Actor | undefined = Actors.ActorFactory.create(
+      mapId,
       ACTOR_TYPES.STAIRS_UP
     );
     if (!stairUp) {
       Umbra.logger.critical("Missing actor type " + ACTOR_TYPES.STAIRS_UP);
       return;
     }
-    Actors.Actor.specialActors[Actors.SpecialActorsEnum.STAIR_UP] = stairUp;
     let stairDown: Actors.Actor | undefined = Actors.ActorFactory.create(
+      mapId,
       ACTOR_TYPES.STAIRS_DOWN
     );
     if (!stairDown) {
       Umbra.logger.critical("Missing actor type " + ACTOR_TYPES.STAIRS_DOWN);
       return;
     }
-    Actors.Actor.specialActors[Actors.SpecialActorsEnum.STAIR_DOWN] = stairDown;
   }
 
   public createPlayer() {
     let player: Actors.Actor | undefined = Actors.ActorFactory.create(
+      this.dungeonLevel,
       ACTOR_TYPES.PLAYER,
       this.playerTilePicker,
       this.playerInventoryPicker,
@@ -132,19 +117,44 @@ export abstract class DungeonScene
     }
     Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER] = player;
     player.register();
+    let [stairsUp]: Actors.Actor[] = player.map.actorList.filter(
+      ({ name }) => name == ACTOR_TYPES.STAIRS_UP
+    );
+    player.moveTo(stairsUp.pos.x, stairsUp.pos.y);
+    Actors.ActorFactory.createInContainer(player, [ACTOR_TYPES.KNIFE]);
+    Actors.Actor.describeCell(player.pos);
   }
 
-  protected buildMap(dungeonLevel: number, map: Map.Map): Map.TopologyMap {
+  protected buildMap(dungeonLevel: number, map: Map): TopologyMap {
     map.init(
+      dungeonLevel,
       Umbra.application.getConsole().width,
       Umbra.application.getConsole().height - STATUS_PANEL_HEIGHT
     );
-    this.renderer.initForNewMap();
-    let dungeonBuilder: Map.BspDungeonBuilder = new Map.BspDungeonBuilder(
+    let dungeonBuilder: BspDungeonBuilder = new BspDungeonBuilder(
       dungeonLevel,
       dungeonConfig
     );
     dungeonBuilder.build(map);
+    map.topology = dungeonBuilder.topologyMap;
+    // hack - put better place
+    let stairsDownIdx = 0,
+      stairsUpIdx = 0;
+    for (const actor of map.actorList) {
+      if (actor.isA(ACTOR_TYPES.STAIRS_DOWN)) {
+        const effect = actor.activable.onActivateEffector.effect as EventEffect;
+        effect.setEventData({
+          portalVariant: stairsDownIdx,
+        });
+        stairsDownIdx++;
+      } else if (actor.isA(ACTOR_TYPES.STAIRS_UP)) {
+        const effect = actor.activable.onActivateEffector.effect as EventEffect;
+        effect.setEventData({
+          portalVariant: stairsUpIdx,
+        });
+        stairsUpIdx++;
+      }
+    }
     return dungeonBuilder.topologyMap;
   }
 }
@@ -155,6 +165,10 @@ export abstract class DungeonScene
  */
 export class Engine extends DungeonScene implements Umbra.IEventListener {
   private status: GameStatus;
+  // We use the coordinates and level of the target portal actor
+  // We assume there will be some sort of target object in an e..g use of staircase
+  // even if it is 'inert'
+  private queuedPortalUse?: ActorId;
   private gui: {
     status: StatusPanel;
     inventory: InventoryPanel;
@@ -170,6 +184,7 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
     super.onInit();
     this.createGui();
 
+    Umbra.EventManager.registerEventListener(this, EVENT_USE_PORTAL);
     Umbra.EventManager.registerEventListener(this, EVENT_CHANGE_STATUS);
     Umbra.EventManager.registerEventListener(this, EVENT_NEW_GAME);
 
@@ -190,8 +205,31 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
 
   public onTerm() {
     super.onTerm();
+    Umbra.EventManager.unregisterEventListener(this, EVENT_USE_PORTAL);
     Umbra.EventManager.unregisterEventListener(this, EVENT_CHANGE_STATUS);
     Umbra.EventManager.unregisterEventListener(this, EVENT_NEW_GAME);
+  }
+
+  public onUsePortal(data: {
+    mapIdOffset: number;
+    portalType: string;
+    portalVariant: number;
+  }) {
+    const mapId = this.dungeonLevel + data.mapIdOffset;
+    if (mapId < 0) {
+      Umbra.logger.warn(
+        "You consider leaving... but your soul would be eaten."
+      );
+
+      Umbra.logger.warn("You must obtain 3 valuable artifacts for passage.");
+      return;
+    }
+    this.ensureLevelGenerated(mapId);
+    const portals = Map.getActors(mapId).filter(
+      (a) => a.name === data.portalType
+    );
+    const portal = portals[data.portalVariant] || portals[0];
+    this.queuedPortalUse = portal.id;
   }
 
   public onChangeStatus(status: GameStatus) {
@@ -202,18 +240,19 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
   }
 
   public onNewGame() {
-    this.dungeonLevel = 1;
+    // (1) delete saved game
     this.deleteSavedGame();
-    this.newGame();
-    this._topotologyMap = this.buildMap(this.dungeonLevel, this.map);
+    // (2) wipe salient static data
+    this.dungeonLevel = 0;
+    Map.currentIndex = 0;
+    Map.actorsDb = [[]];
+    Map.mapDb = [];
     this.status = GameStatus.RUNNING;
+    // (3) generate the first map
+    this.ensureLevelGenerated(this.dungeonLevel);
+    // (4) spawn the player
+    this.createPlayer();
     this.gui.status.clear();
-
-    // starting inventory
-    let player: Actors.Actor =
-      Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
-    Actors.ActorFactory.createInContainer(player, [ACTOR_TYPES.KNIFE]);
-    Actors.Actor.describeCell(player.pos);
   }
 
   public onSaveGame(persister: Yendor.IPersister) {
@@ -226,8 +265,8 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
     } else {
       persister.saveToKey(PERSISTENCE_DUNGEON_LEVEL, this.dungeonLevel);
       persister.saveToKey(PERSISTENCE_VERSION_KEY, SAVEFILE_VERSION);
-      persister.saveToKey(PERSISTENCE_MAP_KEY, this._map);
-      persister.saveToKey(PERSISTENCE_TOPOLOGY_MAP, this._topotologyMap);
+      persister.saveToKey(PERSISTENCE_MAP_KEY, Map.mapDb);
+      // persister.saveToKey(PERSISTENCE_TOPOLOGY_MAP, this._topologyMap);
       persister.saveToKey(PERSISTENCE_STATUS_PANEL, this.gui.status);
       Actors.ActorFactory.save(persister);
     }
@@ -243,30 +282,46 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
     if (this.status === GameStatus.INITIALIZING) {
       return;
     }
-    let player: Actors.Actor =
-      Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
+
+    if (this.status === GameStatus.DEFEAT) {
+      return;
+    }
+    let player: Actors.Actor = Actors.Actor.player;
+    // if (this.status === GameStatus.NEXT_LEVEL) {
+    //   this.status = GameStatus.RUNNING;
+    // } else
+    if (this.queuedPortalUse) {
+      this.gotoNextLevel(this.queuedPortalUse);
+      this.queuedPortalUse = undefined;
+      this.status = GameStatus.RUNNING;
+      if (player) {
+        // the player moved. Recompute the field of view
+        this.map.setDirty();
+        this.map.computeFov(player.pos.x, player.pos.y, Actors.FOV_RADIUS);
+        this.map.updateScentField(player.pos.x, player.pos.y);
+      }
+      return;
+    }
     if (player && !player.destructible.isDead()) {
-      let schedulerPaused = Actors.Actor.scheduler.isPaused();
+      let schedulerPaused = player.scheduler.isPaused();
       if (this.status === GameStatus.NEXT_TURN) {
         this.forceNextTurn = true;
         this.status = GameStatus.RUNNING;
       }
       super.onUpdate(time);
-      if (!schedulerPaused && Actors.Actor.scheduler.isPaused()) {
+      if (!schedulerPaused && player.scheduler.isPaused()) {
         // save every time the scheduler pauses
-        this.persister.saveToKey(
-          Actors.PERSISTENCE_ACTORS_KEY,
-          Actors.Actor.list
-        );
+        this.persister.saveToKey(Actors.PERSISTENCE_ACTORS_KEY, Map.actorsDb);
         this.onSaveGame(this.persister);
       }
     }
     this.handleKeyboardInput();
-    if (this.status === GameStatus.NEXT_LEVEL) {
-      this.gotoNextLevel();
-      this.status = GameStatus.RUNNING;
-    }
-    if (player.destructible.isDead() && this.status !== GameStatus.DEFEAT) {
+    const self = this; // hack for this.status typing
+    if (
+      player &&
+      player.destructible.isDead() &&
+      self.status !== GameStatus.DEFEAT
+    ) {
       Umbra.EventManager.publishEvent(EVENT_CHANGE_STATUS, GameStatus.DEFEAT);
     }
   }
@@ -329,46 +384,35 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
     });
   }
 
-  private loadGame() {
+  private async loadGame() {
     try {
-      this.persister
-        .loadFromKey(PERSISTENCE_DUNGEON_LEVEL)
-        .then((dungeonLevel) => {
-          this.dungeonLevel = dungeonLevel;
-          return this.persister.loadFromKey(PERSISTENCE_MAP_KEY, this._map);
-        })
-        .then((_x) => {
-          return Actors.ActorFactory.load(this.persister);
-        })
-        .then(() => {
-          return Actors.Actor.load(this.persister);
-        })
-        .then(() => {
-          Actors.Actor.specialActors[
-            Actors.SpecialActorsEnum.PLAYER
-          ].ai.setPickers(
-            this.playerTilePicker,
-            this.playerInventoryPicker,
-            this.playerLootHandler
-          );
-          return this.persister.loadFromKey(PERSISTENCE_TOPOLOGY_MAP);
-        })
-        .then((topologyMap) => {
-          this._topotologyMap = topologyMap;
-          return this.persister.loadFromKey(
-            PERSISTENCE_STATUS_PANEL,
-            this.gui.status
-          );
-        })
-        .then((_x) => {
-          this.status = GameStatus.RUNNING;
-        })
-        .catch((err) => {
-          Umbra.logger.critical("Error while loading game :" + err);
-          this.onNewGame();
-        });
-    } catch (e) {
-      Umbra.logger.critical("Error while loading game :" + e);
+      const dungeonLevel = await this.persister.loadFromKey(
+        PERSISTENCE_DUNGEON_LEVEL
+      );
+      this.dungeonLevel = dungeonLevel;
+      Map.currentIndex = dungeonLevel;
+      Yendor.Persistence.registerConstructor(
+        "Map",
+        () => new Map(this.renderer)
+      );
+      await this.persister.loadFromKey(PERSISTENCE_MAP_KEY, Map.mapDb);
+      await Actors.ActorFactory.load(this.persister);
+      await Actors.Actor.load(this.persister);
+      Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER].ai.setPickers(
+        this.playerTilePicker,
+        this.playerInventoryPicker,
+        this.playerLootHandler
+      );
+      //   return this.persister.loadFromKey(PERSISTENCE_TOPOLOGY_MAP);
+      // })
+      // .then((topologyMap) => {
+      // this._topologyMap = topologyMap;
+      this.status = await this.persister.loadFromKey(
+        PERSISTENCE_STATUS_PANEL,
+        this.gui.status
+      );
+    } catch (err) {
+      Umbra.logger.critical("Error while loading game :" + err);
       this.onNewGame();
     }
   }
@@ -382,22 +426,65 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
     this.persister.deleteKey(PERSISTENCE_STATUS_PANEL);
   }
 
+  // public newLevel() {
+  //   this.dungeonLevel++;
+  //   Map.currentIndex = this.dungeonLevel;
+  //   Actors.Actor.currentScheduler.clear();
+  //   // remove all actors but the player and its inventory (except unused keys)
+  //   let player: Actors.Actor =
+  //     Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
+  //   player.mapId = this.dungeonLevel;
+  //   Map.currentActors.push(player);
+  //   Actors.Actor.currentScheduler.addAll(Map.currentActors);
+
+  //   this.createStairs();
+  // }
+  private ensureLevelGenerated(mapId: number): Map {
+    if (Map.mapDb[mapId]) {
+      return Map.mapDb[mapId];
+    }
+    const map = new Map(this.renderer);
+    while (Map.mapDb.length < mapId) {
+      Map.mapDb.push(undefined as any);
+    }
+    Map.mapDb[mapId] = map;
+    this.buildMap(mapId, map);
+    return map;
+  }
   /**
    * Function: gotoNextLevel
    * Go down one level in the dungeon
    */
-  private gotoNextLevel() {
-    this.dungeonLevel++;
-    this.newLevel();
+  private gotoNextLevel(portalId: ActorId) {
+    //   Map.currentIndex = this.dungeonLevel;
+    //   // remove all actors but the player and its inventory (except unused keys)
+    //   let player: Actors.Actor =
+    //     Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
+    //   player.mapId = this.dungeonLevel;
+    //   Map.currentActors.push(player);
+
+    //   this.createStairs();
     let player: Actors.Actor =
       Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
-    player.destructible.heal(player, player.destructible.maxHp / 2);
-    Umbra.logger.warn("You take a moment to rest, and recover your strength.");
-    Umbra.logger.warn(
-      "After a rare moment of peace, you descend deeper\ninto the heart of the dungeon..."
-    );
-    Umbra.logger.warn("Level..." + this.dungeonLevel);
-    this._topotologyMap = this.buildMap(this.dungeonLevel, this._map);
+    let portal = Actors.Actor.fromId(portalId);
+    if (portal) {
+      player.changeMap(portal.mapId);
+      const aiActors = Map.getActors(portal.mapId).filter((a) => !!a.ai);
+      Actors.Actor.resetCurrentScheduler();
+      Actors.Actor.currentScheduler.addAll(aiActors);
+      this.dungeonLevel = portal.mapId;
+      Map.currentIndex = portal.mapId;
+      player.moveTo(portal.pos.x, portal.pos.y);
+      // player.destructible.heal(player, player.destructible.maxHp / 2);
+      // Umbra.logger.warn(
+      //   "You take a moment to rest, and recover your strength."
+      // );
+      // Umbra.logger.warn(
+      //   "After a rare moment of peace, you descend deeper\ninto the heart of the dungeon..."
+      // );
+      Umbra.logger.warn("Level..." + this.dungeonLevel);
+      this.renderer.initForNewMap();
+    }
   }
 
   /**

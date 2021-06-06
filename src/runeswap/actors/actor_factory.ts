@@ -80,6 +80,7 @@ export class ActorFactory {
   public static getActorDef(actorType: string): IActorDef {
     let def: IActorDef = ActorFactory.actorDefs[actorType];
     if (def === undefined) {
+      console.log(new Error().stack);
       Umbra.logger.warn("WARN: unknown actor type " + actorType);
     }
     return def;
@@ -112,17 +113,17 @@ export class ActorFactory {
 
   public static createRandomActors(
     map: IProbabilityMap,
-    level: number
+    mapId: number
   ): Actor[] {
     let count: number = ActorFactory.getRandomCountFromMap(map);
     let result: Actor[] = [];
     let probMap: {
       [index: string]: number;
-    } = ActorFactory.computeLevelProbabilities(map, level);
+    } = ActorFactory.computeLevelProbabilities(map, mapId);
     while (count > 0) {
       let clazz: string = <string>Actor.lootRng.getRandomChance(probMap);
       if (clazz && clazz !== "undefined") {
-        let actor: Actor | undefined = this.createRandomActor(clazz);
+        let actor: Actor | undefined = this.createRandomActor(mapId, clazz);
         if (actor) {
           result.push(actor);
         }
@@ -132,16 +133,20 @@ export class ActorFactory {
     return result;
   }
 
-  public static createRandomActor(clazz: string): Actor | undefined {
+  public static createRandomActor(
+    mapId: number,
+    clazz: string
+  ): Actor | undefined {
     let def: IActorDef = ActorFactory.getActorDef(clazz);
     if (!def) {
+      console.log(new Error().stack);
       Umbra.logger.warn("WARN : unknown actor type " + clazz);
       return undefined;
     } else {
       if (def.abstract) {
         clazz = ActorFactory.getRandomActorClass(clazz);
       }
-      let actor: Actor | undefined = ActorFactory.create(clazz);
+      let actor: Actor | undefined = ActorFactory.create(mapId, clazz);
       if (actor) {
         actor.register();
       }
@@ -153,11 +158,13 @@ export class ActorFactory {
    * Function: create
    * Create an actor of given type
    * Parameters:
+   * mapId - the map to create on
    * type - the actor type name
    * tilePicker - way for the actor to chose a tile
    * inventoryPicker - way for the actor to chose an item in its inventory
    */
   public static create(
+    mapId: number,
     type: string,
     tilePicker?: ITilePicker,
     inventoryPicker?: IInventoryItemPicker,
@@ -165,6 +172,7 @@ export class ActorFactory {
   ): Actor | undefined {
     if (ActorFactory.actorDefs[type]) {
       return ActorFactory.createActor(
+        mapId,
         ActorFactory.actorDefs[type],
         tilePicker,
         inventoryPicker,
@@ -172,6 +180,7 @@ export class ActorFactory {
       );
     }
     if (!ActorFactory.unknownClasses[type]) {
+      console.log(new Error().stack);
       Umbra.logger.warn("WARN : unknown actor type " + type);
       ActorFactory.unknownClasses[type] = true;
     }
@@ -180,7 +189,7 @@ export class ActorFactory {
 
   public static createInContainer(container: Actor, types: string[]) {
     for (let type of types) {
-      let actor: Actor | undefined = ActorFactory.create(type);
+      let actor: Actor | undefined = ActorFactory.create(container.mapId, type);
       if (actor) {
         actor.register();
         if (actor.pickable) {
@@ -311,12 +320,13 @@ export class ActorFactory {
   }
 
   private static createActor(
+    mapId: number,
     def: IActorDef,
     tilePicker?: ITilePicker,
     inventoryPicker?: IInventoryItemPicker,
     lootHandler?: ILootHandler
   ) {
-    let actor: Actor = new Actor(def.name + "|" + ActorFactory.seq);
+    let actor: Actor = new Actor(mapId, def.name + "|" + ActorFactory.seq);
     ActorFactory.seq++;
     ActorFactory.populateActor(
       actor,

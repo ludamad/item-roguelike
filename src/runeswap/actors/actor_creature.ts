@@ -29,9 +29,15 @@ import { ITilePicker } from "./actor_effect";
 import { ActorFactory } from "./actor_factory";
 import {
   adjacentPositionTowards,
+  findAutopickupItem,
+  findDoorNearUnexplored,
+  findNearestEmpty,
   findNearestEnemy,
+  findNearestStairsDown,
+  findNearestStairsUp,
   findNearestUnexplored,
   isEmpty,
+  pathTowards,
 } from "../map_utils";
 import { ACTOR_TYPES } from "../base";
 
@@ -258,7 +264,7 @@ export class BaseAi implements IActorFeature, IContainerListener {
   public move(owner: Actor, stepdx: number, stepdy: number, attack: boolean) {
     let x: number = owner.pos.x;
     let y: number = owner.pos.y;
-    let currentMap: Map.Map = Map.Map.current;
+    let currentMap: Map.Map = owner.map;
     if (
       stepdx !== 0 &&
       (attack
@@ -328,6 +334,14 @@ export class BaseAi implements IActorFeature, IContainerListener {
     y: number,
     attack: boolean = true
   ): boolean {
+    if (
+      owner.isA(ACTOR_TYPES.PLAYER) &&
+      owner.pos.x === x &&
+      owner.pos.y === y
+    ) {
+      owner.scheduler.pause();
+      return false;
+    }
     if (this.hasCondition(ConditionTypeEnum.STUNNED)) {
       owner.wait(this._walkTime);
       return false;
@@ -342,12 +356,16 @@ export class BaseAi implements IActorFeature, IContainerListener {
       return false;
     }
     // cannot move or attack a wall!
-    if (Map.Map.current.isWall(x, y)) {
-      owner.wait(this._walkTime);
+    if (owner.map.isWall(x, y)) {
+      if (this.hasCondition(ConditionTypeEnum.CONFUSED)) {
+        owner.wait(this._walkTime);
+      } else {
+        owner.scheduler.pause();
+      }
       return false;
     }
     // check for living creatures on the destination cell
-    let actors: Actor[] = Actor.list.filter(
+    let actors: Actor[] = owner.map.actorList.filter(
       (actor: Actor) =>
         actor.pos.x === x &&
         actor.pos.y === y &&
@@ -367,7 +385,7 @@ export class BaseAi implements IActorFeature, IContainerListener {
       }
     }
     // check for a closed door
-    actors = Actor.list.filter(
+    actors = owner.map.actorList.filter(
       (actor: Actor) =>
         actor.pos.x === x &&
         actor.pos.y === y &&
@@ -380,7 +398,7 @@ export class BaseAi implements IActorFeature, IContainerListener {
       return false;
     }
     // check for unpassable items
-    if (!Map.Map.current.canWalk(x, y)) {
+    if (!owner.map.canWalk(x, y)) {
       owner.wait(this._walkTime);
       return false;
     }
@@ -473,8 +491,8 @@ export class PlayerAi extends BaseAi {
   public update(owner: Actor) {
     let action: PlayerActionEnum | undefined = getLastPlayerAction();
     if (action === undefined) {
-      if (!Actor.scheduler.isPaused()) {
-        Actor.scheduler.pause();
+      if (!owner.scheduler.isPaused()) {
+        owner.scheduler.pause();
       }
       return;
     }
@@ -492,6 +510,14 @@ export class PlayerAi extends BaseAi {
       case PlayerActionEnum.AUTOFIGHT:
         // move to the target cell or attack if there's a creature
         this.autoFight(owner);
+        break;
+      case PlayerActionEnum.AUTODOWN:
+        // move to the target cell or attack if there's a creature
+        this.autoStairsDown(owner);
+        break;
+      case PlayerActionEnum.AUTOUP:
+        // move to the target cell or attack if there's a creature
+        this.autoStairsUp(owner);
         break;
       case PlayerActionEnum.AUTOEXPLORE:
         // move to the target cell or attack if there's a creature
@@ -511,7 +537,7 @@ export class PlayerAi extends BaseAi {
           // move to the target cell or attack if there's a creature
           this.moveOrAttack(owner, x, y);
         } else {
-          Actor.scheduler.pause();
+          owner.scheduler.pause();
         }
         break;
       case PlayerActionEnum.WAIT:
@@ -531,28 +557,100 @@ export class PlayerAi extends BaseAi {
       case PlayerActionEnum.MOVE_UP:
       case PlayerActionEnum.MOVE_DOWN:
       default:
-        // TODO. not supported. (flying mount or underwater swimming)
+        owner.scheduler.pause();
+        // TODO. not supported. (flying mount or underwater swimming) or UI cancel in wrong time etc
         break;
     }
   }
-  autoExplore(owner: Actor) {
-    const target = findNearestEnemy(owner.pos);
-    if (target) {
-      Umbra.logger.error("You can't explore, you see an enemy!");
-      Actor.scheduler.pause();
+  autoStairsDown(owner: Actor) {
+    let pos = findNearestStairsDown(owner.pos);
+    if (pos && pos.equals(owner.pos)) {
+      this.tryActivate(owner);
       return;
     }
-    const nearestWaypoint = findNearestUnexplored(owner.pos);
-    if (nearestWaypoint) {
-      const nearest = adjacentPositionTowards(owner, nearestWaypoint);
+    if (pos) {
+      const nearest = adjacentPositionTowards(owner, pos);
       if (nearest) {
         // move to the target cell
         this.moveToCell(owner, nearest, true);
-      } else {
-        Actor.scheduler.pause();
+        return true;
       }
-    } else {
-      Actor.scheduler.pause();
+    }
+    owner.scheduler.pause();
+    return false;
+  }
+  autoStairsUp(owner: Actor) {
+    let pos = findNearestStairsUp(owner.pos);
+    if (pos && pos.equals(owner.pos)) {
+      this.tryActivate(owner);
+      return;
+    }
+    if (pos) {
+      const nearest = adjacentPositionTowards(owner, pos);
+      if (nearest) {
+        // move to the target cell
+        this.moveToCell(owner, nearest, true);
+        return true;
+      }
+    }
+    owner.scheduler.pause();
+    return false;
+  }
+  autoExplore(owner: Actor) {
+    const enemy = findNearestEnemy(owner.pos);
+    if (enemy) {
+      Umbra.logger.error("You can't explore, you see an enemy!");
+      owner.map.setDirty();
+      owner.scheduler.pause();
+      return;
+    }
+    let autopickupPos = findAutopickupItem(owner.pos);
+    if (autopickupPos && autopickupPos.equals(owner.pos)) {
+      this.pickupItem(owner);
+      return;
+    }
+    const tryPath = (pos: Core.Position | undefined) => {
+      if (pos) {
+        const path = pathTowards(owner, pos);
+        if (path) {
+          return path;
+        }
+      }
+      return undefined;
+    };
+    let targets = [
+      tryPath(findNearestUnexplored(owner.pos)),
+      tryPath(autopickupPos),
+      tryPath(findDoorNearUnexplored(owner.pos)),
+    ].filter((x) => x);
+    targets.sort((a, b) => {
+      // const dxA = owner.pos.x - a.x,
+      //   dyA = owner.pos.y - a.y;
+      // const dxB = owner.pos.x - b.x,
+      //   dyB = owner.pos.y - b.y;
+      if (a.length < b.length) {
+        return -1;
+      }
+      if (a.length > b.length) {
+        return +1;
+      }
+      return 0;
+    });
+    const tryTarget = (pos: Core.Position[] | undefined): boolean => {
+      if (pos) {
+        const nearest = pos.pop();
+        if (nearest) {
+          // move to the target cell
+          this.moveToCell(owner, nearest, true);
+          return true;
+        }
+      }
+      return false;
+    };
+    const success =
+      tryTarget(targets[0]) || tryTarget(targets[1]) || tryTarget(targets[2]);
+    if (!success) {
+      this.autoStairsDown(owner);
     }
   }
   autoFight(owner: Actor) {
@@ -564,10 +662,10 @@ export class PlayerAi extends BaseAi {
       //     // move to the target cell
       //     this.moveOrAttack(owner, nearest.x, nearest.y);
       //   } else {
-      //     Actor.scheduler.pause();
+      //     owner.scheduler.pause();
       //   }
     } else {
-      Actor.scheduler.pause();
+      owner.scheduler.pause();
     }
   }
 
@@ -654,6 +752,7 @@ export class PlayerAi extends BaseAi {
     }
     if (!weapon || !weapon.ranged) {
       Umbra.logger.error("You have no ranged weapon equipped.");
+      owner.scheduler.pause();
       return;
     }
     // note : this time is spent before you select the target. loading the projectile takes time
@@ -698,7 +797,8 @@ export class PlayerAi extends BaseAi {
 
   private dropItem(owner: Actor, item: Actor) {
     if (item.pickable) {
-      item.pickable.drop(item, owner, undefined, undefined, undefined, true);
+      const pos = findNearestEmpty(owner.pos);
+      item.pickable.drop(item, owner, undefined, pos, undefined, true);
     }
     owner.wait(this.walkTime);
   }
@@ -716,7 +816,6 @@ export class PlayerAi extends BaseAi {
   private pickupItem(owner: Actor) {
     let foundItem: boolean = false;
     let pickedItem: boolean = false;
-    owner.wait(this.walkTime);
     for (let item of Actor.list) {
       if (
         item.pickable &&
@@ -733,10 +832,14 @@ export class PlayerAi extends BaseAi {
     }
     if (!foundItem) {
       if (!this.tryActivate(owner)) {
-        Umbra.logger.warn("There's nothing to pick here.");
+        Umbra.logger.warn("There's nothing to pick up here.");
+        owner.scheduler.pause();
       }
     } else if (!pickedItem) {
       Umbra.logger.warn("Your inventory is full.");
+      owner.scheduler.pause();
+    } else {
+      owner.wait(this.walkTime);
     }
   }
 }
@@ -765,12 +868,14 @@ export class MonsterAi extends BaseAi {
     }
     if (this.behaviorTree) {
       this.behaviorTree.tick(this.context, owner);
+    } else {
+      owner.wait(this.walkTime);
     }
   }
 }
 
 export class XpHolder implements IActorFeature {
-  private _xpLevel: number = 0;
+  private _xpLevel: number = 1;
   private baseLevel: number;
   private newLevel: number;
   private _xp: number = 0;
@@ -797,6 +902,7 @@ export class XpHolder implements IActorFeature {
     if (this._xp >= nextLevelXp) {
       this._xpLevel++;
       this._xp -= nextLevelXp;
+      owner.destructible.gainMaxHP(5);
       Umbra.logger.error(
         transformMessage(
           "[The actor1's] battle skills grow stronger!" +

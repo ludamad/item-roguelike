@@ -300,15 +300,16 @@ export class LightDungeonShader implements Umbra.IEventListener, IMapShader {
       ) {
         let dy2 = pos.y - y - posVariationCoef;
         dy2 = dy2 * dy2;
-        if (dx2 + dy2 <= squaredRange && this.inFov[x][y]) {
-          let intensity: number = 1; //intensityCoef;
-          // actor.light.computeIntensity(dx2 + dy2) * intensityCoef;
-          this.lightMap[x][y] = actor.light.options.color;
-          // lightOperation(
-          //   this.lightMap[x][y],
-          //   Core.ColorUtils.multiply(actor.light.options.color, intensity)
-          // );
-        }
+        this.lightMap[x][y] = actor.light.options.color;
+        // if (dx2 + dy2 <= squaredRange && this.inFov[x][y]) {
+        //   let intensity: number = 1; //intensityCoef;
+        //   // actor.light.computeIntensity(dx2 + dy2) * intensityCoef;
+        //   this.lightMap[x][y] = actor.light.options.color;
+        //   // lightOperation(
+        //   //   this.lightMap[x][y],
+        //   //   Core.ColorUtils.multiply(actor.light.options.color, intensity)
+        //   // );
+        // }
       }
     }
   }

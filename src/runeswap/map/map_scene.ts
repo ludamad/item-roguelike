@@ -11,7 +11,6 @@ export abstract class MapScene
   public enableEvents: boolean = true;
 
   protected persister: Yendor.IPersister;
-  protected _map: Map;
   protected _rng: Yendor.Random;
   protected renderer: MapRendererNode;
   protected playerTilePicker: Actors.ITilePicker;
@@ -26,9 +25,7 @@ export abstract class MapScene
   }
 
   // singleton getters
-  get map() {
-    return this._map;
-  }
+  abstract get map(): Map;
   get rng() {
     return this._rng;
   }
@@ -44,7 +41,6 @@ export abstract class MapScene
     );
 
     this._rng = new Yendor.CMWCRandom();
-    this._map = new Map(this.renderer);
     // adding nodes as children ensure they are updated/rendered by Umbra
     this.addChild(this.renderer);
 
@@ -112,8 +108,8 @@ export abstract class MapScene
         type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
       },
       {
-        name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.NOACTION],
-        positiveButton: Umbra.KeyCodeEnum.DOM_VK_PERIOD,
+        name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.WAIT],
+        positiveButton: Umbra.KeyCodeEnum.DOM_VK_5,
         type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
       },
       // movement
@@ -168,6 +164,26 @@ export abstract class MapScene
         type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
       },
       {
+        name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.AUTOUP],
+        positiveButton: Umbra.KeyCodeEnum.DOM_VK_LESSTHAN,
+        type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
+      },
+      {
+        name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.AUTOUP],
+        positiveButton: Umbra.KeyCodeEnum.DOM_VK_COMMA,
+        type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
+      },
+      {
+        name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.AUTODOWN],
+        positiveButton: Umbra.KeyCodeEnum.DOM_VK_MORETHAN,
+        type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
+      },
+      {
+        name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.AUTODOWN],
+        positiveButton: Umbra.KeyCodeEnum.DOM_VK_PERIOD,
+        type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
+      },
+      {
         name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.VALIDATE],
         positiveButton: Umbra.KeyCodeEnum.DOM_VK_RETURN,
         type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
@@ -218,11 +234,11 @@ export abstract class MapScene
   }
 
   public onModalShow(_w: Gui.Widget) {
-    Actors.Actor.scheduler.pause();
+    Actors.Actor.currentScheduler.pause();
   }
 
   public onModalHide(_w: Gui.Widget) {
-    Actors.Actor.scheduler.resume();
+    Actors.Actor.currentScheduler.resume();
   }
   /**
    * Function: onUpdate
@@ -235,18 +251,23 @@ export abstract class MapScene
         Actors.getLastPlayerAction() !== undefined)
     ) {
       this.forceNextTurn = false;
-      Actors.Actor.scheduler.resume();
+      Actors.Actor.currentScheduler.resume();
     }
-    if (Actors.Actor.scheduler.isPaused()) {
+    if (Actors.Actor.currentScheduler.isPaused()) {
       return;
     }
     let player: Actors.Actor =
       Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
     if (player) {
+      let oldPlayerMapId: number = player.mapId;
       let oldPlayerX: number = player.pos.x;
       let oldPlayerY: number = player.pos.y;
-      Actors.Actor.scheduler.run();
-      if (player.pos.x !== oldPlayerX || player.pos.y !== oldPlayerY) {
+      Actors.Actor.currentScheduler.run();
+      if (
+        player.mapId !== oldPlayerMapId ||
+        player.pos.x !== oldPlayerX ||
+        player.pos.y !== oldPlayerY
+      ) {
         // the player moved. Recompute the field of view
         this.map.setDirty();
         this.map.computeFov(player.pos.x, player.pos.y, Actors.FOV_RADIUS);

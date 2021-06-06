@@ -3,6 +3,9 @@ import * as Yendor from "../yendor/main";
 import * as Actors from "../actors/main";
 import { CellLightLevelEnum } from "./map_render";
 import { MapRendererNode } from "./map_render";
+import { Actor } from "../actors/main";
+import { TilingSprite } from "pixi.js";
+import { TopologyMap } from "./main";
 
 /**
  * ==============================================================================
@@ -21,7 +24,16 @@ export class Tile {
 }
 
 export class Map extends Core.Rect implements Yendor.IPersistent {
-  public static current: Map;
+  public static currentIndex: number = 0;
+  public static get current(): Map {
+    return Map.mapDb[this.currentIndex];
+  }
+  public static get currentActors(): Actor[] {
+    return Map.getActors(this.currentIndex);
+  }
+  public static mapDb: Map[] = [];
+  public static actorsDb: Actor[][] = [];
+  private index: number;
   private tiles: Tile[][];
   private __inFov: boolean[][];
   private _fov: Yendor.Fov;
@@ -29,7 +41,18 @@ export class Map extends Core.Rect implements Yendor.IPersistent {
   // whether we must recompute fov
   private _dirty: boolean = true;
   private __renderer: MapRendererNode;
+  public topology: TopologyMap;
 
+  static getActors(floorId: number): Actor[] {
+    while (Map.actorsDb.length <= floorId) {
+      Map.actorsDb.push([]);
+    }
+    return Map.actorsDb[floorId];
+  }
+
+  get actorList(): Actor[] {
+    return Map.getActors(this.index);
+  }
   get renderer() {
     return this.__renderer;
   }
@@ -39,8 +62,9 @@ export class Map extends Core.Rect implements Yendor.IPersistent {
     this.__renderer = renderer;
   }
 
-  public init(width: number, height: number) {
+  public init(index: number, width: number, height: number) {
     this.resize(width, height);
+    this.index = index;
     this.tiles = [];
     this.__inFov = [];
     this._fov = new Yendor.Fov(width, height);
@@ -52,7 +76,6 @@ export class Map extends Core.Rect implements Yendor.IPersistent {
       }
     }
     this._dirty = true;
-    Map.current = this;
     this.__renderer.onInit();
   }
 
@@ -121,7 +144,7 @@ export class Map extends Core.Rect implements Yendor.IPersistent {
       return false;
     }
     return (
-      Actors.Actor.list.filter(
+      this.actorList.filter(
         (actor: Actors.Actor) =>
           actor.pos.x === x && actor.pos.y === y && actor.blocks
       ).length === 0
@@ -224,7 +247,7 @@ export class Map extends Core.Rect implements Yendor.IPersistent {
 
   // Persistent interface
   public load(jsonData: any) {
-    this.init(jsonData.w, jsonData.h);
+    this.init(jsonData.index, jsonData.w, jsonData.h);
     this._fov = new Yendor.Fov(this.w, this.h);
     for (let x = 0; x < this.w; x++) {
       for (let y = 0; y < this.h; y++) {

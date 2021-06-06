@@ -75,6 +75,8 @@ export enum PlayerActionEnum {
   VALIDATE,
   AUTOEXPLORE,
   AUTOFIGHT,
+  AUTODOWN,
+  AUTOUP,
   CANCEL,
 }
 
