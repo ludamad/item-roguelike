@@ -30,7 +30,7 @@ export const TILEPICKER_OK_COLOR: Core.Color = 0x00ff00;
 export const TILEPICKER_KO_COLOR: Core.Color = 0xff2222;
 
 // some material colors
-export const DARK_WOOD_COLOR: Core.Color = 0x2c1e14;
+export const DARK_WOOD_COLOR: Core.Color = 0x996633;
 export const WOOD_COLOR: Core.Color = 0xffa070;
 export const LIGHT_COLOR: Core.Color = 0xdf9f48;
 export const IVORY_COLOR: Core.Color = 0xdfd8bb;
@@ -45,7 +45,7 @@ export const CANDLE_LIGHT_COLOR: Core.Color = 0xdddd44;
 export const TORCH_LIGHT_COLOR: Core.Color = 0xffff44;
 export const SUNROD_LIGHT_COLOR: Core.Color = 0xeeeeff;
 export const NOLIGHT_COLOR: Core.Color = 0x444444;
-export const HEALTH_POTION_COLOR: Core.Color = 0x800080;
+export const HEALTH_POTION_COLOR: Core.Color = 0xff66cc;
 export const OIL_FLASK_COLOR: Core.Color = 0xaf5320;
 
 // gui
@@ -69,7 +69,7 @@ export const INVENTORY_MANIPULATION_TIME: number = 10;
 // xp level required for level 1
 export const XP_BASE_LEVEL: number = 0;
 // xp level required for level n = BASE_LEVEL + n * NEW_LEVEL
-export const XP_NEW_LEVEL: number = 50;
+export const XP_NEW_LEVEL: number = 25;
 
 // A.I.
 export const SCENT_THRESHOLD: number = 10;

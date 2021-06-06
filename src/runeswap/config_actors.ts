@@ -212,7 +212,7 @@ Actors.ActorFactory.registerActorDef({
   attacker: { attackTime: Actors.PLAYER_WALK_TIME, hitPoints: 2 },
   blockWalk: false,
   color: 0xffffff,
-  destructible: { corpseName: "your cadaver", defence: 0, healthPoints: 30 },
+  destructible: { corpseName: "your cadaver", defence: 0, healthPoints: 25 },
   light: {
     color: 0xffffff,
     falloffType: Actors.LightFalloffTypeEnum.NORMAL,

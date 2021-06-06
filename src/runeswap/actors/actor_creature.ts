@@ -788,8 +788,10 @@ export class PlayerAi extends BaseAi {
   private useItem(owner: Actor, item: Actor) {
     if (item.pickable) {
       item.pickable.use(item, owner).then((used: boolean) => {
-        if (used) {
+        if (used && owner.isA(ACTOR_TYPES.PLAYER)) {
           owner.wait(this.walkTime);
+        } else {
+          owner.scheduler.pause();
         }
       });
     }

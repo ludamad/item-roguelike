@@ -14,13 +14,12 @@ export interface HostileDescriptor {
 }
 
 function calcXp(hostile: HostileDescriptor) {
-  return (
-    Math.floor(
-      ((Math.sqrt(hostile.healthPoints * hostile.attack) / 4) *
-        hostile.experienceModifier) /
-        2 /
-        5
-    ) * 5
+  return Math.ceil(
+    (Math.sqrt(
+      (hostile.healthPoints * Math.max(hostile.attack, hostile.defence)) / 4
+    ) *
+      hostile.experienceModifier) /
+      12
   );
 }
 
@@ -34,6 +33,8 @@ function registerHostileDef(hostileDesc: HostileDescriptor) {
     color,
     destructible: {
       defence,
+      // corpseName: name + " corpse",
+      // corpseChar: "%",
       healthPoints: Math.floor(healthPoints / 5),
       loot: {
         classProb: [

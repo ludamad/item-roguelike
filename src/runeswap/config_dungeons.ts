@@ -92,14 +92,23 @@ let lootProbabilities: Actors.IProbabilityMap = {
 
 let creatureProbabilities: Actors.IProbabilityMap = {
   classProb: [
-    { clazz: "hobgoblin[s]", prob: 60 },
-    { clazz: "orc[s]", prob: 30 },
+    { clazz: "hobgoblin[s]", prob: 30 },
+    { clazz: "jackal[s]", prob: 30 },
+    { clazz: "rat[s]", prob: 30 },
+    { clazz: "kobold[s]", prob: 30 },
+    {
+      clazz: "orc[s]",
+      prob: [
+        [1, 30],
+        [7, 80],
+      ],
+    },
     {
       clazz: "troll[s]",
       prob: [
-        [3, 10],
+        [3, 30],
         [5, 20],
-        [7, 30],
+        [7, 80],
       ],
     },
   ],

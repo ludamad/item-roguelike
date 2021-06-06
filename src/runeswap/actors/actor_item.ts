@@ -17,6 +17,8 @@ import {
   IMagicDef,
   IActivableDef,
   IDoorDef,
+  IInstantHealthEffectDef,
+  TargetSelectionMethodEnum,
 } from "./actor_def";
 import { IActorFeature, ActorId } from "./actor_feature";
 import { transformMessage } from "./base";
@@ -211,7 +213,14 @@ export class Destructible implements IActorFeature {
     }
     const { x, y } = owner.pos;
     // Move the owner temporarily for drop calculations
-    owner.moveTo(-1, -1);
+    if (!this.corpseName) {
+      owner.moveTo(-1, -1);
+    } else {
+      const empty = findNearestEmpty(new Core.Position(x, y));
+      if (empty) {
+        owner.moveTo(empty.x, empty.y);
+      }
+    }
     for (const item of owner.container.getContent(undefined)) {
       item.pickable.drop(
         item,
@@ -221,20 +230,32 @@ export class Destructible implements IActorFeature {
       );
     }
     // Move the owner back
-    owner.moveTo(x, y);
-    // if (!this.corpseName || owner.container.computeTotalWeight() <= 0) {
-    owner.destroy();
-    //   return;
-    // }
-    // // save name in case of resurrection
-    // this.swapNameAndCorpseName(owner);
-    // this.wasBlocking = owner.blocks;
-    // this.wasTransparent = owner.transparent;
-    // owner.blocks = false;
-    // if (!owner.transparent) {
-    //   Map.Map.current.setTransparent(owner.pos.x, owner.pos.y, true);
-    //   owner.transparent = true;
-    // }
+    if (!this.corpseName) {
+      owner.destroy();
+      return;
+    }
+    this.swapNameAndCorpseName(owner);
+    this.wasBlocking = owner.blocks;
+    this.wasTransparent = owner.transparent;
+    owner.blocks = false;
+    if (!owner.transparent) {
+      owner.map.setTransparent(owner.pos.x, owner.pos.y, true);
+      owner.transparent = true;
+    }
+    // owner.container = undefined;
+    // owner.activable = new Activable({
+    //   onActivateEffector: {
+    //     destroyOnEffect: true,
+    //     effect: <IInstantHealthEffectDef>{
+    //       amount: 5,
+    //       successMessage: "You eat the corpse!",
+    //     },
+    //     targetSelector: {
+    //       method: TargetSelectionMethodEnum.ACTOR_ON_CELL,
+    //     },
+    //   },
+    //   type: ActivableTypeEnum.SINGLE,
+    // });
     // if (owner.activable) {
     //   owner.activable.deactivate(owner);
     // }
@@ -322,12 +343,16 @@ export class Attacker implements IActorFeature {
       if (damage >= target.destructible.hp) {
         msg += " and kill[s] [it2] !";
         logLevel = Umbra.LogLevel.WARN;
-        if (owner.xpHolder && target.destructible.xp) {
+        // There is a xp gain/hp gain tax based on our level
+        const levelTax = owner.xpHolder ? (owner.xpHolder.xpLevel - 1) * 3 : 0;
+        const xpGain = Math.max(0, target.destructible.xp - levelTax);
+        if (owner.xpHolder && xpGain) {
           msg +=
-            "\n[The actor2] [is2] dead. [The actor1] gain[s] " +
-            target.destructible.xp +
-            " xp.";
-          gainedXp = target.destructible.xp;
+            "\n[The actor2] [is2] dead. [The actor1] aborb[s] " +
+            xpGain +
+            " life.";
+          gainedXp = xpGain;
+          owner.destructible.heal(owner, xpGain);
         }
       } else if (damage > 0) {
         msg += " for " + damage + " hit points.";

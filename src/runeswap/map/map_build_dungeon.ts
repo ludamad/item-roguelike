@@ -321,17 +321,17 @@ export class AbstractDungeonBuilder {
     y2: number,
     map: Map
   ) {
-    // let monsters: Actors.Actor[] = Actors.ActorFactory.createRandomActors(
-    //   this.creatureProbabilities,
-    //   this.mapId
-    // );
-    // for (let monster of monsters) {
-    //   let x = this.rng.getNumber(x1, x2);
-    //   let y = this.rng.getNumber(y1, y2);
-    //   if (map.canWalk(x, y)) {
-    //     monster.moveTo(x, y);
-    //   }
-    // }
+    let monsters: Actors.Actor[] = Actors.ActorFactory.createRandomActors(
+      this.creatureProbabilities,
+      this.mapId
+    );
+    for (let monster of monsters) {
+      let x = this.rng.getNumber(x1, x2);
+      let y = this.rng.getNumber(y1, y2);
+      if (map.canWalk(x, y)) {
+        monster.moveTo(x, y);
+      }
+    }
   }
 
   private createWallTorches(map: Map, minCount: number, maxCount: number) {

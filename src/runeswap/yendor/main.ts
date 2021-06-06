@@ -77,13 +77,13 @@ export function init() {
 
   frameLoop = (function () {
     return (
-      window.requestAnimationFrame ||
-      (<any>window).webkitRequestAnimationFrame ||
-      (<any>window).mozRequestAnimationFrame ||
-      (<any>window).oRequestAnimationFrame ||
-      (<any>window).msRequestAnimationFrame ||
+      // window.requestAnimationFrame ||
+      // (<any>window).webkitRequestAnimationFrame ||
+      // (<any>window).mozRequestAnimationFrame ||
+      // (<any>window).oRequestAnimationFrame ||
+      // (<any>window).msRequestAnimationFrame ||
       function (callback: (elapsedTime: number) => void) {
-        window.setTimeout(callback, 1000 / 60, new Date().getTime());
+        window.setTimeout(callback, 1000 / 120, new Date().getTime());
       }
     );
   })();
