@@ -31,7 +31,7 @@ export class RangeCompareNode extends Yendor.TestContextNode {
       target = tick.context.get(this.contextKey);
     }
     if (!target) {
-      throw new Error("Test node has no target! " + this.contextKey);
+      return Yendor.TickResultEnum.FAILURE;
     }
     let distance: number = Core.Position.distance(target.pos, owner.pos);
     let childStatus: Yendor.TickResultEnum = <Yendor.TickResultEnum>(

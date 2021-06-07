@@ -83,7 +83,11 @@ function isVisibleHostile({ x, y }: Core.Position): boolean {
 }
 function isNearUnexplored(pos: Core.Position): boolean {
   const isActorOrFree = !Map.current.isWall(pos.x, pos.y) && !isBlocked(pos);
-  return isActorOrFree && !Map.current.isExplored(pos.x, pos.y); // && Map.current.isAdjacentUnexplored(pos.x, pos.y);
+  return (
+    isActorOrFree &&
+    (!Map.current.isExplored(pos.x, pos.y) ||
+      Map.current.isAdjacentUnexplored(pos.x, pos.y, true))
+  );
 }
 
 function isStairsUp({ x, y }: Core.Position): boolean {

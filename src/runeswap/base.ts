@@ -15,7 +15,9 @@ export const MENU_FOREGROUND_ACTIVE: Core.Color = 0xffdf90;
 export const MENU_FOREGROUND_DISABLED: Core.Color = 0x5c714b;
 export const TITLE_FOREGROUND: Core.Color = 0xffffff;
 export const HEALTH_BAR_BACKGROUND: Core.Color = 0xff3f3f;
+export const HEALTH_BAR_GOOD_BACKGROUND: Core.Color = 0x3f7f3f;
 export const HEALTH_BAR_FOREGROUND: Core.Color = 0x7f3f3f;
+export const HEALTH_BAR_GOOD_FOREGROUND: Core.Color = 0x1f3f1f;
 export const XP_BAR_BACKGROUND: Core.Color = 0x9f3fff;
 export const XP_BAR_FOREGROUND: Core.Color = 0x3f007f;
 export const CONDITION_BAR_BACKGROUND: Core.Color = 0x3f9f3f;
@@ -79,6 +81,7 @@ export const CTX_KEY_GUARD: string = "guard";
 
 // persistence local storage keys
 export const PERSISTENCE_VERSION_KEY: string = "version";
+export const PERSISTENCE_STORY_KEY: string = "story";
 export const PERSISTENCE_DUNGEON_LEVEL: string = "dungeonLevel";
 export const PERSISTENCE_STATUS_PANEL: string = "statusPanel";
 export const PERSISTENCE_MAP_KEY: string = "map";
@@ -119,6 +122,7 @@ export const ACTOR_TYPES = {
   MAGIC: "magic",
   ITEM: "item[s]",
   FLASK: "flask[s]",
+  ARTEFACT: "artefact[s]",
   MONEY: "money",
   GOLD_PIECE: "gold piece[s]",
   CONTAINER: "container[s]",
@@ -136,6 +140,7 @@ export const ACTOR_TYPES = {
   // KEY_RING: "key ring[s]",
   POTION: "potion[s]",
   HEALTH_POTION: "health potion[s]",
+  GREATER_HEALTH_POTION: "greater health potion[s]",
   REGENERATION_POTION: "regeneration potion[s]",
   SCROLL: "scroll[s]",
   SCROLL_OF_LIGHTNING_BOLT: "scroll[s] of lighting bolt",
@@ -150,6 +155,7 @@ export const ACTOR_TYPES = {
   SHIELD: "shield[s]",
   WOODEN_SHIELD: "wooden shield[s]",
   IRON_SHIELD: "iron shield[s]",
+  GREATSHIELD: "greatshield[s]",
   RANGED: "ranged",
   SHORT_BOW: "short bow[s]",
   LONG_BOW: "long bow[s]",
@@ -158,8 +164,7 @@ export const ACTOR_TYPES = {
   STAFF: "staff[s]",
   STAFF_OF_TELEPORTATION: "staff[s] of teleportation",
   STAFF_OF_LIFE_DETECTION: "staff[s] of life detection",
-  STAFF_OF_MAPPING: "staff[s] of mapping",
-  SUNROD: "sunrod[s]",
+  SCROLL_OF_MAPPING: "scroll[s] of mapping",
   PROJECTILE: "projectile[s]",
   ARROW: "arrow[s]",
   IRON_ARROW: "iron arrow[s]",

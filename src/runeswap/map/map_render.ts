@@ -231,13 +231,21 @@ export class DungeonRendererNode extends MapRendererNode {
     this.renderMap(con);
     this.renderActors(con);
     Map.current.setDirty();
-    Map.current.computeFov(player.pos.x, player.pos.y, Actors.FOV_RADIUS);
+    Map.current.computeFov(
+      player.pos.x,
+      player.pos.y,
+      1 + player.xpHolder.xpLevel
+    );
   }
 
   private renderNormal(con: Yendor.Console) {
     let player = Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
     con.clearText();
-    Map.current.computeFov(player.pos.x, player.pos.y, Actors.FOV_RADIUS);
+    Map.current.computeFov(
+      player.pos.x,
+      player.pos.y,
+      1 + player.xpHolder.xpLevel
+    );
     this.shader.prepareFrame();
     this.renderMap(con);
     this.renderActors(con);
@@ -263,7 +271,11 @@ export class DungeonRendererNode extends MapRendererNode {
     this.renderMap(con);
     this.renderActors(con);
     Map.current.setDirty();
-    Map.current.computeFov(player.pos.x, player.pos.y, Actors.FOV_RADIUS);
+    Map.current.computeFov(
+      player.pos.x,
+      player.pos.y,
+      1 + player.xpHolder.xpLevel
+    );
   }
 
   private renderFov(con: Yendor.Console) {

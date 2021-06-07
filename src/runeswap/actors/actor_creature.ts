@@ -149,7 +149,7 @@ export class BaseAi implements IActorFeature, IContainerListener {
     this._walkTime = newValue;
   }
 
-  public update(owner: Actor) {
+  public async update(owner: Actor): Promise<void> {
     if (!this._conditions) {
       return;
     }
@@ -238,11 +238,11 @@ export class BaseAi implements IActorFeature, IContainerListener {
 
   // listen to inventory events to manage OVERENCUMBERED condition
   public onAdd(_actorId: ActorId, container: Container, owner: Actor) {
-    this.checkOverencumberedCondition(container, owner);
+    // this.checkOverencumberedCondition(container, owner);
   }
 
   public onRemove(_actorId: ActorId, container: Container, owner: Actor) {
-    this.checkOverencumberedCondition(container, owner);
+    // this.checkOverencumberedCondition(container, owner);
   }
 
   public moveToCell(owner: Actor, pos: Core.Position, attack: boolean) {
@@ -303,15 +303,16 @@ export class BaseAi implements IActorFeature, IContainerListener {
       this.activateActors(owner, actors);
       return true;
     }
-    // check on adjacent cells
-    actors = Actor.list.filter(
-      (actor: Actor) =>
-        ((actor.activable && !actor.pickable) ||
-          (actor.container &&
-            (!actor.pickable || actor.pickable.containerId === undefined))) &&
-        actor.pos.isAdjacent(owner.pos, false) &&
-        actor !== owner
-    );
+    // TODO remove - was confusing, especially with ortho play
+    // // check on adjacent cells
+    // actors = Actor.list.filter(
+    //   (actor: Actor) =>
+    //     ((actor.activable && !actor.pickable) ||
+    //       (actor.container &&
+    //         (!actor.pickable || actor.pickable.containerId === undefined))) &&
+    //     actor.pos.isAdjacent(owner.pos, false) &&
+    //     actor !== owner
+    // );
     if (actors.length > 0) {
       this.activateActors(owner, actors);
       return true;
@@ -409,17 +410,32 @@ export class BaseAi implements IActorFeature, IContainerListener {
   }
 
   private activateActors(owner: Actor, actors: Actor[]) {
+    let shouldWait = false;
     let containers: Actor[] = [];
     for (let actor of actors) {
       if (actor.activable) {
         actor.activable.switchLever(actor, owner);
-        owner.wait(this._walkTime);
+        shouldWait = true;
       } else if (actor.container) {
         containers.push(actor);
       }
     }
     if (containers.length > 0 && this.lootHandler) {
-      this.lootHandler.lootContainer(owner, containers);
+      // this.lootHandler.lootContainer(owner, containers);
+      for (const actor of containers) {
+        const pos = actor.pos.clone();
+        actor.moveTo(-1, -1);
+        for (const item of actor.container.getContent(undefined)) {
+          item.pickable.drop(item, owner, undefined, findNearestEmpty(pos));
+        }
+        actor.destroy();
+        shouldWait = true;
+      }
+    }
+    if (shouldWait) {
+      owner.wait(this._walkTime);
+    } else {
+      owner.scheduler.pause();
     }
   }
 
@@ -452,8 +468,8 @@ export class ItemAi extends BaseAi {
     super(walkTime, undefined, undefined, undefined);
   }
 
-  public update(owner: Actor) {
-    super.update(owner);
+  public async update(owner: Actor) {
+    await super.update(owner);
     owner.wait(this.walkTime);
   }
 }
@@ -488,7 +504,7 @@ export class PlayerAi extends BaseAi {
    * Function: update
    * Updates the player.
    */
-  public update(owner: Actor) {
+  public async update(owner: Actor): Promise<void> {
     let action: PlayerActionEnum | undefined = getLastPlayerAction();
     if (action === undefined) {
       if (!owner.scheduler.isPaused()) {
@@ -497,7 +513,7 @@ export class PlayerAi extends BaseAi {
       return;
     }
     // update conditions
-    super.update(owner);
+    await super.update(owner);
     // conditions might have killed the actor
     if (
       this.hasCondition(ConditionTypeEnum.STUNNED) ||
@@ -551,7 +567,7 @@ export class PlayerAi extends BaseAi {
       case PlayerActionEnum.ZAP:
         // case PlayerActionEnum.ACTIVATE:
         if (!this.hasCondition(ConditionTypeEnum.CONFUSED)) {
-          this.handleAction(owner, action);
+          await this.handleAction(owner, action);
         }
         break;
       case PlayerActionEnum.MOVE_UP:
@@ -606,7 +622,9 @@ export class PlayerAi extends BaseAi {
     }
     let autopickupPos = findAutopickupItem(owner.pos);
     if (autopickupPos && autopickupPos.equals(owner.pos)) {
-      this.pickupItem(owner);
+      if (this.pickupItem(owner)) {
+        owner.wait(this.walkTime);
+      }
       return;
     }
     const tryPath = (pos: Core.Position | undefined) => {
@@ -628,10 +646,10 @@ export class PlayerAi extends BaseAi {
       //   dyA = owner.pos.y - a.y;
       // const dxB = owner.pos.x - b.x,
       //   dyB = owner.pos.y - b.y;
-      if (a.length < b.length) {
+      if ((a || []).length < (b || []).length) {
         return -1;
       }
-      if (a.length > b.length) {
+      if ((a || []).length > (b || []).length) {
         return +1;
       }
       return 0;
@@ -649,8 +667,10 @@ export class PlayerAi extends BaseAi {
     };
     const success =
       tryTarget(targets[0]) || tryTarget(targets[1]) || tryTarget(targets[2]);
-    if (!success) {
+    if (!success && targets.length === 0) {
       this.autoStairsDown(owner);
+    } else if (!success) {
+      owner.scheduler.pause();
     }
   }
   autoFight(owner: Actor) {
@@ -689,27 +709,39 @@ export class PlayerAi extends BaseAi {
     return true;
   }
 
-  private handleAction(owner: Actor, action: PlayerActionEnum) {
+  private async handleAction(owner: Actor, action: PlayerActionEnum) {
+    owner.scheduler.pause();
     switch (action) {
       case PlayerActionEnum.GRAB:
-        this.pickupItem(owner);
+        if (this.pickupItem(owner)) {
+          owner.wait(this.walkTime);
+          owner.scheduler.resume();
+        }
         break;
       case PlayerActionEnum.USE_ITEM:
         if (this.inventoryItemPicker) {
-          this.inventoryItemPicker
-            .pickItemFromInventory("use an item", owner)
-            .then((item: Actor) => {
-              this.useItem(owner, item);
-            });
+          const item = await this.inventoryItemPicker.pickItemFromInventory(
+            "use an item",
+            owner
+          );
+          const used = await this.useItem(owner, item);
+          if (used) {
+            owner.wait(this.walkTime);
+            owner.scheduler.resume();
+          }
         }
         break;
       case PlayerActionEnum.DROP_ITEM:
         if (this.inventoryItemPicker) {
-          this.inventoryItemPicker
-            .pickItemFromInventory("drop an item", owner)
-            .then((item: Actor) => {
-              this.dropItem(owner, item);
-            });
+          const item = await this.inventoryItemPicker.pickItemFromInventory(
+            "drop an item",
+            owner
+          );
+          const used = await this.dropItem(owner, item);
+          if (used) {
+            owner.wait(this.walkTime);
+            owner.scheduler.resume();
+          }
         }
         break;
       case PlayerActionEnum.THROW_ITEM:
@@ -725,7 +757,10 @@ export class PlayerAi extends BaseAi {
         this.fire(owner);
         break;
       case PlayerActionEnum.ZAP:
-        this.zap(owner);
+        if (await this.zap(owner)) {
+          owner.wait(this.walkTime);
+          owner.scheduler.resume();
+        }
         break;
       // case PlayerActionEnum.ACTIVATE:
       //   this.tryActivate(owner);
@@ -768,7 +803,7 @@ export class PlayerAi extends BaseAi {
    * Function: zap
    * Use a magic wand/staff/rod.
    */
-  private zap(owner: Actor) {
+  private async zap(owner: Actor): Promise<boolean> {
     let staff: Actor | undefined = owner.container.getFromSlot(SLOT_RIGHT_HAND);
     if (!staff || !staff.magic) {
       staff = owner.container.getFromSlot(SLOT_BOTH_HANDS);
@@ -778,31 +813,28 @@ export class PlayerAi extends BaseAi {
     }
     if (!staff || !staff.magic) {
       Umbra.logger.error("You have no magic item equipped.");
-      return;
+      return false;
     }
-    staff.magic.zap(staff, owner).then((_zapped: boolean) => {
-      // owner.wait(this.walkTime);
-    });
+    return await staff.magic.zap(staff, owner);
   }
 
-  private useItem(owner: Actor, item: Actor) {
+  private async useItem(owner: Actor, item: Actor) {
     if (item.pickable) {
-      item.pickable.use(item, owner).then((used: boolean) => {
-        if (used && owner.isA(ACTOR_TYPES.PLAYER)) {
-          owner.wait(this.walkTime);
-        } else {
-          owner.scheduler.pause();
-        }
-      });
+      const used = await item.pickable.use(item, owner);
+      if (used || !owner.isA(ACTOR_TYPES.PLAYER)) {
+        return true;
+      }
     }
+    return false;
   }
 
   private dropItem(owner: Actor, item: Actor) {
     if (item.pickable) {
       const pos = findNearestEmpty(owner.pos);
       item.pickable.drop(item, owner, undefined, pos, undefined, true);
+      return true;
     }
-    owner.wait(this.walkTime);
+    return false;
   }
 
   private throwItem(owner: Actor, item: Actor) {
@@ -835,13 +867,13 @@ export class PlayerAi extends BaseAi {
     if (!foundItem) {
       if (!this.tryActivate(owner)) {
         Umbra.logger.warn("There's nothing to pick up here.");
-        owner.scheduler.pause();
+        return false;
       }
     } else if (!pickedItem) {
       Umbra.logger.warn("Your inventory is full.");
-      owner.scheduler.pause();
+      return false;
     } else {
-      owner.wait(this.walkTime);
+      return true;
     }
   }
 }

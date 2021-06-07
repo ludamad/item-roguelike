@@ -930,17 +930,15 @@ export class Pickable implements IActorFeature {
    * Returns:
    * true if this effect was applied, false if it only triggered the tile picker
    */
-  public use(owner: Actor, wearer: Actor): Promise<boolean> {
+  public async use(owner: Actor, wearer: Actor): Promise<boolean> {
     if (this.onUseEffector) {
-      return this.onUseEffector.apply(owner, wearer);
+      return await this.onUseEffector.apply(owner, wearer);
     } else if (owner.equipment) {
       owner.equipment.use(owner, wearer);
     } else if (owner.activable) {
       owner.activable.activate(owner);
     }
-    return new Promise<boolean>((resolve) => {
-      resolve(true);
-    });
+    return true;
   }
 
   /**
@@ -1296,7 +1294,7 @@ export class Magic implements IActorFeature {
    * Returns:
    * true if this effect was applied, false if it only triggered the tile picker
    */
-  public zap(owner: Actor, wearer: Actor): Promise<boolean> {
+  public async zap(owner: Actor, wearer: Actor): Promise<boolean> {
     if (this._charges === 0) {
       Umbra.logger.info(
         transformMessage(
@@ -1304,19 +1302,15 @@ export class Magic implements IActorFeature {
           wearer
         )
       );
+      return false;
     } else if (this.onFireEffector) {
-      this.onFireEffector.apply(owner, wearer).then((applied: boolean) => {
-        if (applied) {
-          this.doPostZap(owner, wearer);
-        }
-        return new Promise<boolean>((resolve) => {
-          resolve(applied);
-        });
-      });
+      const applied = await this.onFireEffector.apply(owner, wearer);
+      if (applied) {
+        this.doPostZap(owner, wearer);
+      }
+      return applied;
     }
-    return new Promise<boolean>((resolve) => {
-      resolve(false);
-    });
+    return false;
   }
 
   private doPostZap(owner: Actor, wearer: Actor) {
@@ -1528,7 +1522,7 @@ export class Door extends Activable {
   public activate(owner: Actor, activator?: Actor): boolean {
     if (super.activate(owner, activator)) {
       let currentMap: Map.Map = owner.map;
-      owner.ch = "/";
+      owner.ch = "`";
       owner.blocks = false;
       owner.transparent = true;
       currentMap.setWalkable(owner.pos.x, owner.pos.y, true);

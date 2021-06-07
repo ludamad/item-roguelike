@@ -122,7 +122,7 @@ export class Application {
    * Function: onNewFrame
    * Called when the browser renders a new animation frame
    */
-  protected onNewFrame(time: number): void {
+  protected async onNewFrame(time: number): void {
     try {
       this._elapsedTime = time - this._gameTime;
       let scene: Scene = SceneManager.getRunningScene();
@@ -130,7 +130,7 @@ export class Application {
         this._gameTime = time;
         // update the game only options.ticksPerSecond per second
         if (!this.paused) {
-          scene.updateHierarchy(time);
+          await scene.updateHierarchy(time);
           scene.computeBoundingBox();
           scene.expand(this.console.width, this.console.height);
           resetInput();

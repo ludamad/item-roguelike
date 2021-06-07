@@ -20,7 +20,7 @@ export abstract class TimedEntity {
    * Function: update
    * Update the entity and call <wait()>.
    */
-  public abstract update(): void;
+  public abstract update(): Promise<void> | void;
 
   public wait(time: number) {
     this._nextActionTime += time;
@@ -134,7 +134,7 @@ export class Scheduler {
    * Update all entities that are ready and put them back in the sorted queue.
    * The update function should increase the entity waitTime.
    */
-  public run() {
+  public async run() {
     if (this.paused || this.entities.isEmpty()) {
       return;
     }
@@ -154,14 +154,15 @@ export class Scheduler {
     ) {
       this.currentEntity = this.entities.pop()!;
       let oldTime = this.currentEntity.getNextActionTime();
-      this.currentEntity.update();
+      await this.currentEntity.update();
       if (this.paused && pausingEntity === undefined) {
         pausingEntity = this.currentEntity;
       } else if (this.currentEntity !== undefined) {
         // currentEntity is undefined if it was removed from scheduler during its update
         if (
           !this.paused &&
-          this.currentEntity.getNextActionTime() === oldTime
+          this.currentEntity.getNextActionTime() === oldTime &&
+          (this.currentEntity as any).name === "player"
         ) {
           console.log("ERROR : scheduler : entity didn't wait after update");
           console.log(new Error().stack);

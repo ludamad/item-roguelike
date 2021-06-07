@@ -481,21 +481,22 @@ export class Effector {
    * Returns:
    * false if a tile needs to be selected (in that case, wait for TILE_SELECTED event, then call <applyOnPos>)
    */
-  public apply(
+  public async apply(
     owner: Actor,
     wearer: Actor,
     cellPos?: Core.Position,
     coef: number = 1.0
   ): Promise<boolean> {
-    return new Promise<boolean>((resolve) => {
-      this._coef = coef;
-      this.targetSelector
-        .selectTargets(owner, wearer, cellPos)
-        .then((targets: Actor[]) => {
-          this.applyEffectToActorList(owner, wearer, targets);
-          resolve(targets.length > 0);
-        });
-    });
+    this._coef = coef;
+    this.targetSelector;
+    this._coef = coef;
+    const targets = await this.targetSelector.selectTargets(
+      owner,
+      wearer,
+      cellPos
+    );
+    this.applyEffectToActorList(owner, wearer, targets);
+    return targets.length > 0;
   }
 
   private applyEffectToActorList(owner: Actor, wearer: Actor, actors: Actor[]) {

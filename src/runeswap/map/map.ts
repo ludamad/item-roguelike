@@ -155,14 +155,21 @@ export class Map extends Core.Rect implements Yendor.IPersistent {
     return this.tiles[x][y].explored;
   }
 
-  public isAdjacentUnexplored(x: number, y: number): boolean {
+  public isAdjacentUnexplored(
+    x: number,
+    y: number,
+    ignoreWalls = false
+  ): boolean {
     let cells: Core.Position[] = new Core.Position(x, y).getAdjacentCells(
       this.w,
       this.h,
-      false
+      true // allow diagonals
     );
     for (let pos of cells) {
-      if (!this.isWall(pos.x, pos.y) && !this.isExplored(pos.x, pos.y)) {
+      if (
+        (ignoreWalls || !this.isWall(pos.x, pos.y)) &&
+        !this.isExplored(pos.x, pos.y)
+      ) {
         return true;
       }
     }

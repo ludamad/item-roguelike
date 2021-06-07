@@ -14,17 +14,19 @@ export interface HostileDescriptor {
 }
 
 function calcXp(hostile: HostileDescriptor) {
+  // return Math.ceil(
+  //   (hostile.healthPoints ** 0.65 * hostile.experienceModifier) / 12
+  // );
   return Math.ceil(
-    (Math.sqrt(
-      (hostile.healthPoints * Math.max(hostile.attack, hostile.defence)) / 4
-    ) *
-      hostile.experienceModifier) /
-      12
+    Math.sqrt((hostile.healthPoints * (hostile.attack + hostile.defence)) / 8)
   );
 }
 
 function registerHostileDef(hostileDesc: HostileDescriptor) {
   const { name, attack, character, color, defence, healthPoints } = hostileDesc;
+  if (healthPoints <= 1) {
+    return;
+  }
   Actors.ActorFactory.registerActorDef({
     name: name + "[s]",
     ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: PLAYER_WALK_TIME },

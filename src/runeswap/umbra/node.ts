@@ -258,10 +258,10 @@ export class Node extends Core.TreeNode {
    * Parameters:
    * time - current game time
    */
-  public updateHierarchy(time: number): void {
+  public async updateHierarchy(time: number): Promise<void> {
     if (this.visible) {
-      this.updateChildrenHierarchy(time);
-      this.onUpdate(time);
+      await this.updateChildrenHierarchy(time);
+      await this.onUpdate(time);
     }
   }
 
@@ -333,9 +333,9 @@ export class Node extends Core.TreeNode {
     }
   }
 
-  protected updateChildrenHierarchy(time: number) {
+  protected async updateChildrenHierarchy(time: number) {
     for (let child of this.children) {
-      (<Node>child).updateHierarchy(time);
+      await (<Node>child).updateHierarchy(time);
     }
   }
 }

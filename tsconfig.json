@@ -8,7 +8,8 @@
         "moduleResolution": "node",
         "strictNullChecks": true,
         "noUnusedLocals": false,
-        "noUnusedParameters": false
+        "noUnusedParameters": false,
+        "strict": true
     },
     "files": [
         "src/runeswap/main.ts"

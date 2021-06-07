@@ -118,42 +118,47 @@ export class StatusPanel
     this.console.clearBack(0x000000);
     this.console.clearText();
     this.console.print(0, 0, this.mouseLookText);
+    const hpIsGood = player.destructible.hp * 2 >= player.destructible.maxHp;
     this.renderBar(
       1,
       1,
       Constants.STAT_BAR_WIDTH,
-      "HP",
+      "Health ",
       player.destructible.hp,
       player.destructible.maxHp,
-      Constants.HEALTH_BAR_BACKGROUND,
-      Constants.HEALTH_BAR_FOREGROUND
+      hpIsGood
+        ? Constants.HEALTH_BAR_GOOD_BACKGROUND
+        : Constants.HEALTH_BAR_BACKGROUND,
+      hpIsGood
+        ? Constants.HEALTH_BAR_GOOD_FOREGROUND
+        : Constants.HEALTH_BAR_FOREGROUND
     );
     this.renderBar(
       1,
       2,
       Constants.STAT_BAR_WIDTH,
-      "LEVEL " + player.xpHolder.xpLevel + "",
+      "Level " + player.xpHolder.xpLevel + " XP",
       player.xpHolder.xp,
       player.xpHolder.getNextLevelXp(),
       Constants.XP_BAR_BACKGROUND,
       Constants.XP_BAR_FOREGROUND
+    );
+    this.console.print(
+      1,
+      3,
+      "Power " + (player.xpHolder.xpLevel + 4 + player.getAttacker().power)
+    );
+    this.console.print(
+      10,
+      3,
+      "Defence " + player.destructible.computeRealDefence(player)
     );
 
-    this.renderBar(
-      1,
-      2,
-      Constants.STAT_BAR_WIDTH,
-      "LEVEL " + player.xpHolder.xpLevel + "",
-      player.xpHolder.xp,
-      player.xpHolder.getNextLevelXp(),
-      Constants.XP_BAR_BACKGROUND,
-      Constants.XP_BAR_FOREGROUND
-    );
-    this.console.print(1, 4, "FLOOR " + getEngine().dungeonLevel);
+    this.console.print(1, 4, getEngine().dungeonDetails.name);
     this.console.print(
       1,
       5,
-      "CAPACITY " +
+      "Capacity " +
         player.container.computeTotalWeight().toFixed(1) +
         "/" +
         player.container.capacity
@@ -180,7 +185,7 @@ export class StatusPanel
       let cond: Actors.Condition = conditions[i];
       this.renderBar(
         1,
-        3 + i,
+        4 + i,
         Constants.STAT_BAR_WIDTH,
         cond.getName(),
         cond.time,
@@ -246,7 +251,7 @@ export class StatusPanel
     let label: string = name || "";
     if (displayValues && maxValue !== -1) {
       if (name) {
-        label += " : ";
+        label += " ";
       }
       label += Math.floor(value) + "/" + Math.floor(maxValue);
     }

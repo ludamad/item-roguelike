@@ -263,7 +263,7 @@ export class ActorFactory {
 
   private static seq: number = 1;
   private static unknownClasses: { [index: string]: boolean } = {};
-  private static actorDefs: { [index: string]: IActorDef } = {};
+  public static actorDefs: { [index: string]: IActorDef } = {};
   private static actorTypes: string[] = [];
   private static btTrees: { [index: string]: Yendor.BehaviorTree } = {};
 

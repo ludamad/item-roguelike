@@ -2,9 +2,6 @@ import * as Core from "../core/main";
 import * as Umbra from "../umbra/main";
 import { Actor } from "./actor";
 
-// unlimited fov
-export const FOV_RADIUS: number = 8;
-
 // some material colors
 export const FROST_COLOR: Core.Color = 0xe0e0ff;
 

@@ -432,6 +432,11 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
     return this._singular;
   }
 
+  // For special circumstances, transforming stairs etc
+  public setSingular(value: boolean) {
+    this._singular = value;
+  }
+
   public isStackable(): boolean {
     return (
       !this.destructible &&
@@ -710,9 +715,9 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
     return desc;
   }
 
-  public update() {
+  public async update() {
     if (this.ai) {
-      this.ai.update(this);
+      await this.ai.update(this);
     }
   }
 }

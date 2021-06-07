@@ -1,13 +1,13 @@
 import { HostileDescriptor } from "./hostile";
 
 const LIGHTRED = 0xe14141;
-const RED = 0x7a213a;
+const RED = 0xe14141; //0x7a213a;
 const WHITE = 0xffffff;
 const GREEN = 0x39855a;
 const LIGHTGREEN = 0x83e04c;
 const LIGHTCYAN = 0xdcff70;
 const BROWN = 0xffa070; //0x753939;
-const BLUE = 0x243b61;
+const BLUE = 0x2980b9;
 const LIGHTBLUE = 0x3898ff;
 const TEAL = 0x6eeeff;
 const LIGHTGREY = 0xb2bcc2;
@@ -2024,15 +2024,6 @@ export const HOSTILE_DESCS: HostileDescriptor[] = [
     healthPoints: 385,
     character: "W",
     experienceModifier: 5,
-  },
-  {
-    name: "player ghost",
-    attack: 5,
-    defence: 1,
-    color: WHITE,
-    healthPoints: 140,
-    character: "W",
-    experienceModifier: 15,
   },
   {
     name: "shadow",

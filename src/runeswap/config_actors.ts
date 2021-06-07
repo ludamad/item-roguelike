@@ -117,7 +117,7 @@ Actors.ActorFactory.registerActorDef({
   abstract: true,
   ai: {
     type: Actors.AiTypeEnum.MONSTER,
-    walkTime: 4,
+    walkTime: PLAYER_WALK_TIME,
     // shorter syntax
     treeName: BEHAVIOR_TREES.BASIC_HOSTILE,
   },
@@ -364,7 +364,44 @@ Actors.ActorFactory.registerActorDef({
     onUseEffector: {
       destroyOnEffect: true,
       effect: <IInstantHealthEffectDef>{
-        amount: 5,
+        amount: 10,
+        failureMessage:
+          "[The actor1] drink[s] the health potion but it has no effect",
+        successMessage:
+          "[The actor1] drink[s] the health potion and regain[s] [value1] hit points.",
+        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+      },
+      targetSelector: { method: Actors.TargetSelectionMethodEnum.WEARER },
+    },
+    weight: 0.5,
+  },
+  prototypes: [ACTOR_TYPES.POTION],
+});
+
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.GREATER_HEALTH_POTION,
+  color: HEALTH_POTION_COLOR,
+  pickable: {
+    destroyedWhenThrown: true,
+    onThrowEffector: {
+      destroyOnEffect: true,
+      effect: <IInstantHealthEffectDef>{
+        amount: 3,
+        failureMessage:
+          "The potion explodes on [the actor1] but it has no effect",
+        successMessage:
+          "The potion explodes on [the actor1], healing [it] for [value1] hit points.",
+        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+      },
+      targetSelector: {
+        method: Actors.TargetSelectionMethodEnum.SELECTED_RANGE,
+        radius: 1,
+      },
+    },
+    onUseEffector: {
+      destroyOnEffect: true,
+      effect: <IInstantHealthEffectDef>{
+        amount: 100,
         failureMessage:
           "[The actor1] drink[s] the health potion but it has no effect",
         successMessage:
@@ -421,7 +458,16 @@ Actors.ActorFactory.registerActorDef({
   },
   prototypes: [ACTOR_TYPES.POTION],
 });
-
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.ARTEFACT,
+  ch: "%",
+  color: STEEL_COLOR,
+  containerQualifier: true,
+  pickable: {
+    weight: 2,
+  },
+  prototypes: [ACTOR_TYPES.ITEM],
+});
 // ================================== scrolls ==================================
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.SCROLL,
@@ -642,7 +688,17 @@ Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.IRON_SHIELD,
   color: IRON_COLOR,
   equipment: {
-    defence: 1.5,
+    defence: 2,
+    slots: [Actors.SLOT_LEFT_HAND],
+  },
+  prototypes: [ACTOR_TYPES.SHIELD],
+});
+
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.GREATSHIELD,
+  color: IRON_COLOR,
+  equipment: {
+    defence: 3,
     slots: [Actors.SLOT_LEFT_HAND],
   },
   prototypes: [ACTOR_TYPES.SHIELD],
@@ -768,23 +824,6 @@ Actors.ActorFactory.registerActorDef({
   pickable: { weight: 3 },
   prototypes: [ACTOR_TYPES.WEAPON],
 });
-
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.SUNROD,
-  activable: { type: Actors.ActivableTypeEnum.TOGGLE },
-  // light: {
-  //   color: SUNROD_LIGHT_COLOR,
-  //   falloffType: Actors.LightFalloffTypeEnum.LINEAR,
-  //   intensityVariationLength: 1300,
-  //   intensityVariationPattern:
-  //     "0000000111112222333445566677778888899999998888877776665544333222211111",
-  //   intensityVariationRange: 0.15,
-  //   range: 15,
-  //   renderMode: Actors.LightRenderModeEnum.ADDITIVE,
-  // },
-  prototypes: [ACTOR_TYPES.STAFF, ACTOR_TYPES.MAGIC],
-});
-
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.STAFF_OF_TELEPORTATION,
   magic: {
@@ -828,20 +867,39 @@ Actors.ActorFactory.registerActorDef({
   prototypes: [ACTOR_TYPES.STAFF, ACTOR_TYPES.MAGIC],
 });
 
+// name: ACTOR_TYPES.SCROLL_OF_LIGHTNING_BOLT,
+// pickable: {
+//   onUseEffector: {
+//     destroyOnEffect: true,
+//     effect: <IInstantHealthEffectDef>{
+//       amount: -20,
+//       successMessage:
+//         "A lightning bolt strikes [the actor1] with a loud thunder!\n" +
+//         "The damage is [value1] hit points.",
+//       type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+//     },
+//     targetSelector: {
+//       method: Actors.TargetSelectionMethodEnum.CLOSEST_ENEMY,
+//       range: 5,
+//     },
+//   },
+//   weight: 0.1,
+// },
+// prototypes: [ACTOR_TYPES.SCROLL],
 Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.STAFF_OF_MAPPING,
-  magic: {
-    charges: 5,
-    onFireEffect: {
-      destroyOnEffect: false,
+  name: ACTOR_TYPES.SCROLL_OF_MAPPING,
+  pickable: {
+    onUseEffector: {
+      destroyOnEffect: true,
       effect: {
         type: Actors.EffectTypeEnum.MAP_REVEAL,
       },
-      message: "[The actor1] zap[s] [its] staff.",
+      message: "[The actor1] read[s] [its] scroll of mapping.",
       targetSelector: { method: Actors.TargetSelectionMethodEnum.WEARER },
     },
+    weight: 0.1,
   },
-  prototypes: [ACTOR_TYPES.STAFF, ACTOR_TYPES.MAGIC],
+  prototypes: [ACTOR_TYPES.SCROLL],
 });
 
 Actors.ActorFactory.registerActorDef({
@@ -870,7 +928,7 @@ Actors.ActorFactory.registerActorDef({
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.WOODEN_DOOR,
   activable: <Actors.IDoorDef>{
-    activateMessage: "[The actor1] is open",
+    activateMessage: "[The actor1] is open.",
     deactivateMessage: "[The actor1] is closed.",
     seeThrough: false,
     type: Actors.ActivableTypeEnum.DOOR,
@@ -883,7 +941,7 @@ Actors.ActorFactory.registerActorDef({
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.IRON_DOOR,
   activable: <Actors.IDoorDef>{
-    activateMessage: "[The actor1] is open",
+    activateMessage: "[The actor1] is open.",
     deactivateMessage: "[The actor1] is closed.",
     seeThrough: true,
     type: Actors.ActivableTypeEnum.DOOR,

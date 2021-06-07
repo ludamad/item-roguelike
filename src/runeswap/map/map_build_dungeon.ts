@@ -5,6 +5,13 @@ import { TopologyMap, TopologyAnalyzer, Connector } from "./map_topology";
 import { Map } from "./map";
 import { PUZZLE_STEP_PROBABILITY } from "./constants";
 import { ACTOR_TYPES } from "../base";
+import {
+  branchItems,
+  branchMonsters,
+  DungeonDetails,
+  findBranch,
+} from "../story";
+import { getEngine } from "../main";
 
 /**
  * ==============================================================================
@@ -71,17 +78,20 @@ export class AbstractDungeonBuilder {
     this.digMap(map);
     let analyzer: TopologyAnalyzer = new TopologyAnalyzer();
     // find suitable dungeon entry and exit
-    let [stairsDown]: Actors.Actor[] = map.actorList.filter(
-      ({ name }) => name == ACTOR_TYPES.STAIRS_DOWN
+    let [endFocus]: Actors.Actor[] = map.actorList.filter((a) =>
+      a.isA(ACTOR_TYPES.STAIRS_DOWN)
     );
-    let [stairsUp]: Actors.Actor[] = map.actorList.filter(
-      ({ name }) => name == ACTOR_TYPES.STAIRS_DOWN
+    let [stairsUp]: Actors.Actor[] = map.actorList.filter((a) =>
+      a.isA(ACTOR_TYPES.STAIRS_UP)
     );
-    this._topologyMap = analyzer.buildTopologyMap(map, stairsDown.pos);
-    analyzer.findDungeonExits(stairsUp.pos, stairsDown.pos);
+    this.createBranchDrops();
+    endFocus =
+      endFocus || map.actorList.filter((a) => a.isA(ACTOR_TYPES.ARTEFACT))[0];
+    this._topologyMap = analyzer.buildTopologyMap(map, endFocus.pos);
+    analyzer.findDungeonExits(stairsUp.pos, endFocus.pos);
     analyzer.buildPuzzle(
       this._topologyMap.getObjectId(stairsUp.pos),
-      this._topologyMap.getObjectId(stairsDown.pos)
+      this._topologyMap.getObjectId(endFocus.pos)
     );
     this.applyPuzzle();
     this.createWallTorches(map, this.config.minTorches, this.config.maxTorches);
@@ -160,7 +170,14 @@ export class AbstractDungeonBuilder {
       let otherStairs: Actors.Actor[] = map.actorList.filter(
         ({ name }) => name == ACTOR_TYPES.STAIRS_UP
       );
-      if (stairs.length === 3 && otherStairs.length < 3) {
+      const branch = findBranch(
+        getEngine().storyConfig.dungeon,
+        this.mapId
+      ) as DungeonDetails;
+      if (
+        stairs.length === branch.subBranches.length * 3 &&
+        otherStairs.length < branch.numPortalsIn
+      ) {
         const stairsUp = Actors.ActorFactory.create(
           this.mapId,
           ACTOR_TYPES.STAIRS_UP
@@ -169,7 +186,7 @@ export class AbstractDungeonBuilder {
         stairsUp.pos.y = Math.floor((y1 + y2) / 2);
       } else {
         let stairsDown: Actors.Actor;
-        if (stairs.length < 3) {
+        if (stairs.length < branch.subBranches.length * 3) {
           stairsDown = Actors.ActorFactory.create(
             this.mapId,
             ACTOR_TYPES.STAIRS_DOWN
@@ -177,8 +194,10 @@ export class AbstractDungeonBuilder {
         } else {
           stairsDown = stairs[stairs.length - 1];
         }
-        stairsDown.pos.x = Math.floor((x1 + x2) / 2);
-        stairsDown.pos.y = Math.floor((y1 + y2) / 2);
+        if (stairsDown) {
+          stairsDown.pos.x = Math.floor((x1 + x2) / 2);
+          stairsDown.pos.y = Math.floor((y1 + y2) / 2);
+        }
       }
     }
   }
@@ -326,10 +345,17 @@ export class AbstractDungeonBuilder {
       this.mapId
     );
     for (let monster of monsters) {
-      let x = this.rng.getNumber(x1, x2);
-      let y = this.rng.getNumber(y1, y2);
-      if (map.canWalk(x, y)) {
-        monster.moveTo(x, y);
+      let i;
+      for (i = 0; i < 100; i++) {
+        let x = this.rng.getNumber(x1, x2);
+        let y = this.rng.getNumber(y1, y2);
+        if (map.canWalk(x, y)) {
+          monster.moveTo(x, y);
+          break;
+        }
+      }
+      if (i >= 100) {
+        console.log("CANT", monster.name);
       }
     }
   }
@@ -421,7 +447,8 @@ export class AbstractDungeonBuilder {
         // no need to check that x,y is a wall cell. see <fixWallItems()>
         item.moveTo(x, y);
       } else {
-        for (let i = 0; i < 100; i++) {
+        let i;
+        for (i = 0; i < 100; i++) {
           let x = this.rng.getNumber(x1, x2);
           let y = this.rng.getNumber(y1, y2);
           if (map.canWalk(x, y)) {
@@ -429,7 +456,7 @@ export class AbstractDungeonBuilder {
             break;
           }
         }
-        if (!map.canWalk(item.pos.x, item.pos.y)) {
+        if (i >= 100) {
           console.log("CANT", item.name);
         }
       }
@@ -470,6 +497,23 @@ export class AbstractDungeonBuilder {
     }
   }
 
+  private createBranchDrops() {
+    for (const actorType of branchMonsters(
+      getEngine().storyConfig.dungeon,
+      this.mapId
+    ).concat(branchItems(getEngine().storyConfig.dungeon, this.mapId))) {
+      const actor = Actors.ActorFactory.create(this.mapId, actorType);
+      for (let i = 0; i < 100; i++) {
+        const x = this.rng.getNumber(0, Map.mapDb[this.mapId].w);
+        const y = this.rng.getNumber(0, Map.mapDb[this.mapId].h);
+        if (actor.map.canWalk(x, y)) {
+          actor.moveTo(x, y);
+          actor.register();
+          break;
+        }
+      }
+    }
+  }
   private createLoot() {
     let [stairsUp]: Actors.Actor[] = Map.getActors(this.mapId).filter(
       ({ name }) => name == ACTOR_TYPES.STAIRS_UP

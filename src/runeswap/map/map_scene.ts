@@ -244,7 +244,7 @@ export abstract class MapScene
    * Function: onUpdate
    * Triggers actors' A.I. during a new game turn.
    */
-  public onUpdate(_time: number) {
+  public async onUpdate(_time: number) {
     if (
       this.forceNextTurn ||
       (Gui.Widget.getActiveModal() === undefined &&
@@ -262,7 +262,7 @@ export abstract class MapScene
       let oldPlayerMapId: number = player.mapId;
       let oldPlayerX: number = player.pos.x;
       let oldPlayerY: number = player.pos.y;
-      Actors.Actor.currentScheduler.run();
+      await Actors.Actor.currentScheduler.run();
       if (
         player.mapId !== oldPlayerMapId ||
         player.pos.x !== oldPlayerX ||
@@ -270,7 +270,11 @@ export abstract class MapScene
       ) {
         // the player moved. Recompute the field of view
         this.map.setDirty();
-        this.map.computeFov(player.pos.x, player.pos.y, Actors.FOV_RADIUS);
+        this.map.computeFov(
+          player.pos.x,
+          player.pos.y,
+          1 + player.xpHolder.xpLevel
+        );
         this.map.updateScentField(player.pos.x, player.pos.y);
       }
     }
