@@ -143,21 +143,35 @@ export class StatusPanel
       Constants.XP_BAR_BACKGROUND,
       Constants.XP_BAR_FOREGROUND
     );
-    this.console.print(
+    this.renderBar(
       1,
       3,
-      "Power " + (player.xpHolder.xpLevel + 4 + player.getAttacker().power)
+      Constants.STAT_BAR_WIDTH,
+      "Favor " + player.xpHolder.xpLevel + " XP",
+      player.xpHolder.xp,
+      player.xpHolder.getNextLevelXp(),
+      Constants.FAVOR_BAR_BACKGROUND,
+      Constants.FAVOR_BAR_FOREGROUND
+    );
+    this.console.print(
+      1,
+      4,
+      "Power " +
+        (player.xpHolder.demonicFavorLevel +
+          player.xpHolder.xpLevel +
+          4 +
+          player.getAttacker().power)
     );
     this.console.print(
       10,
-      3,
+      4,
       "Defence " + player.destructible.computeRealDefence(player)
     );
 
-    this.console.print(1, 4, getEngine().dungeonDetails.name);
+    this.console.print(1, 5, getEngine().dungeonDetails.name);
     this.console.print(
       1,
-      5,
+      6,
       "Capacity " +
         player.container.computeTotalWeight().toFixed(1) +
         "/" +

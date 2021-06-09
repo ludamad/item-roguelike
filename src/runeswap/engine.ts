@@ -193,7 +193,7 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
   }
 
   public get dungeonDetails(): DungeonDetails {
-    return findBranch(this.storyConfig.dungeon, this.dungeonLevel);
+    return findBranch(this.storyConfig.dungeon, this.dungeonLevel) as DungeonDetails;
   }
   public onTerm() {
     super.onTerm();

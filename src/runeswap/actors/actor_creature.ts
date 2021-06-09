@@ -40,6 +40,7 @@ import {
   pathTowards,
 } from "../map_utils";
 import { ACTOR_TYPES } from "../base";
+import { getEngine } from "../main";
 
 /**
  * ==============================================================================
@@ -560,6 +561,7 @@ export class PlayerAi extends BaseAi {
         owner.wait(this.walkTime);
         break;
       case PlayerActionEnum.GRAB:
+      case PlayerActionEnum.SACRIFICE_ITEM:
       case PlayerActionEnum.USE_ITEM:
       case PlayerActionEnum.DROP_ITEM:
       case PlayerActionEnum.THROW_ITEM:
@@ -731,6 +733,19 @@ export class PlayerAi extends BaseAi {
           }
         }
         break;
+      case PlayerActionEnum.SACRIFICE_ITEM:
+        if (this.inventoryItemPicker) {
+          const item = await this.inventoryItemPicker.pickItemFromInventory(
+            "sacrifice an item",
+            owner
+          );
+          const used = await this.sacrificeItem(owner, item);
+          if (used) {
+            owner.wait(this.walkTime);
+            owner.scheduler.resume();
+          }
+        }
+        break;
       case PlayerActionEnum.DROP_ITEM:
         if (this.inventoryItemPicker) {
           const item = await this.inventoryItemPicker.pickItemFromInventory(
@@ -746,11 +761,15 @@ export class PlayerAi extends BaseAi {
         break;
       case PlayerActionEnum.THROW_ITEM:
         if (this.inventoryItemPicker) {
-          this.inventoryItemPicker
-            .pickItemFromInventory("throw an item", owner)
-            .then((item: Actor) => {
-              this.throwItem(owner, item);
-            });
+          const item = await this.inventoryItemPicker.pickItemFromInventory(
+            "throw an item",
+            owner
+          );
+          const used = await this.throwItem(owner, item);
+          if (used) {
+            owner.wait(this.walkTime);
+            owner.scheduler.resume();
+          }
         }
         break;
       case PlayerActionEnum.FIRE:
@@ -774,7 +793,7 @@ export class PlayerAi extends BaseAi {
    * Function: fire
    * Fire a projectile using a ranged weapon.
    */
-  private fire(owner: Actor) {
+  private async fire(owner: Actor): Promise<boolean> {
     // load the weapon and starts the tile picker
     let weapon: Actor | undefined = owner.container.getFromSlot(
       SLOT_RIGHT_HAND
@@ -788,15 +807,9 @@ export class PlayerAi extends BaseAi {
     if (!weapon || !weapon.ranged) {
       Umbra.logger.error("You have no ranged weapon equipped.");
       owner.scheduler.pause();
-      return;
+      return false;
     }
-    // note : this time is spent before you select the target. loading the projectile takes time
-    owner.wait(weapon.ranged.loadTime);
-    weapon.ranged.fire(owner, weapon).then((_fired: boolean) => {
-      // if ( fired ) {
-      //     owner.wait(this.walkTime);
-      // }
-    });
+    return await weapon.ranged.fire(owner, weapon);
   }
 
   /**
@@ -827,6 +840,16 @@ export class PlayerAi extends BaseAi {
     }
     return false;
   }
+  private async sacrificeItem(owner: Actor, item: Actor) {
+    if (item.pickable) {
+      if (item.pickable.price > 0) {
+        item.destroy();
+        owner.xpHolder.addDemonicFavor(owner, item.pickable.price);
+        return true;
+      }
+    }
+    return false;
+  }
 
   private dropItem(owner: Actor, item: Actor) {
     if (item.pickable) {
@@ -837,14 +860,16 @@ export class PlayerAi extends BaseAi {
     return false;
   }
 
-  private throwItem(owner: Actor, item: Actor) {
+  private async throwItem(owner: Actor, item: Actor): Promise<boolean> {
     if (item.pickable) {
-      item.pickable
-        .throw(item, Actor.specialActors[SpecialActorsEnum.PLAYER], false)
-        .then(() => {
-          owner.wait(this.walkTime);
-        });
+      await item.pickable.throw(
+        item,
+        Actor.specialActors[SpecialActorsEnum.PLAYER],
+        false
+      );
+      return true;
     }
+    return false;
   }
 
   private pickupItem(owner: Actor) {
@@ -892,8 +917,8 @@ export class MonsterAi extends BaseAi {
     }
   }
 
-  public update(owner: Actor) {
-    super.update(owner);
+  public async update(owner: Actor) {
+    await super.update(owner);
 
     // don't update a dead monster
     if (owner.destructible && owner.destructible.isDead()) {
@@ -913,6 +938,8 @@ export class XpHolder implements IActorFeature {
   private baseLevel: number;
   private newLevel: number;
   private _xp: number = 0;
+  public demonicFavorXp: number = 0;
+  public demonicFavorLevel: number = 0;
 
   constructor(def: IXpHolderDef) {
     if (def) {
@@ -930,6 +957,9 @@ export class XpHolder implements IActorFeature {
   public getNextLevelXp(): number {
     return this.baseLevel + this._xpLevel * this.newLevel;
   }
+  public getNextDemonicLevelXp(): number {
+    return this.baseLevel + this._xpLevel * this.newLevel;
+  }
   public addXp(owner: Actor, amount: number) {
     this._xp += amount;
     let nextLevelXp = this.getNextLevelXp();
@@ -942,6 +972,32 @@ export class XpHolder implements IActorFeature {
           "[The actor1's] battle skills grow stronger!" +
             " [The actor1] reached level " +
             this.xpLevel,
+          owner
+        )
+      );
+    }
+  }
+  public addDemonicFavor(owner: Actor, amount: number) {
+    this.demonicFavorXp += amount;
+
+    let nextLevelXp = this.getNextDemonicLevelXp();
+    if (this.demonicFavorXp >= nextLevelXp) {
+      this.demonicFavorLevel++;
+      this.demonicFavorXp -= nextLevelXp;
+      Umbra.logger.error(
+        transformMessage(
+          `[The actor1's] is now favor level ${this.demonicFavorLevel} with ${
+            getEngine().storyConfig.demonName
+          }!`,
+          owner
+        )
+      );
+    } else {
+      Umbra.logger.error(
+        transformMessage(
+          `[The actor1's] gains favor with ${
+            getEngine().storyConfig.demonName
+          }!`,
           owner
         )
       );

@@ -46,7 +46,10 @@ function generateLinearDungeon(
 export function generateStoryDetails() {
   let dungeon = generateLinearDungeon("Tartarus", 0, 9);
   for (let i = 8; i < 9; i++) {
-    findBranch(dungeon, i).items = [ACTOR_TYPES.ARTEFACT];
+    const branch = findBranch(dungeon, i);
+    if (branch) {
+      branch.items = [ACTOR_TYPES.ARTEFACT];
+    }
   }
 
   return {

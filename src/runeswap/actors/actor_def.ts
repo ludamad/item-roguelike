@@ -49,6 +49,7 @@ export interface IActorDef {
  */
 export interface IPickableDef {
   weight: number;
+  price: number;
   destroyedWhenThrown?: boolean;
   onUseEffector?: IEffectorDef;
   onThrowEffector?: IEffectorDef;

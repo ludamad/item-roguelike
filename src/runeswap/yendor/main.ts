@@ -21,6 +21,7 @@ import { Console, URL_PARAM_RENDERER, URL_PARAM_RENDERER_DIV } from "./console";
 import { DivConsoleRenderer } from "./console_div";
 import { PixiConsoleRenderer } from "./console_pixi";
 import { Persistence } from "./persistence";
+import { timeout } from "./jsUtils";
 import {
   AbstractNode,
   AbstractCompositeNode,
@@ -64,7 +65,7 @@ export let isBrowser = new Function(
  * > Yendor.urlParams["param"]
  */
 export let urlParams: { [index: string]: string };
-let frameLoop: (callback: (elapsedTime: number) => void) => void;
+let frameLoop: (callback: (elapsedTime: number) => Promise<void>) => void;
 /**
  * Function: init
  * Initialize the library. Must be called before anything else.
@@ -75,18 +76,24 @@ export function init() {
    * http://paulirish.com/2011/requestanimationframe-for-smart-animating/
    */
 
-  frameLoop = (function () {
-    return (
-      // window.requestAnimationFrame ||
-      // (<any>window).webkitRequestAnimationFrame ||
-      // (<any>window).mozRequestAnimationFrame ||
-      // (<any>window).oRequestAnimationFrame ||
-      // (<any>window).msRequestAnimationFrame ||
-      function (callback: (elapsedTime: number) => void) {
-        window.setTimeout(callback, 1000 / 120, new Date().getTime());
+  frameLoop = function (callback: (elapsedTime: number) => Promise<void>) {
+    // window.requestAnimationFrame ||
+    // (<any>window).webkitRequestAnimationFrame ||
+    // (<any>window).mozRequestAnimationFrame ||
+    // (<any>window).oRequestAnimationFrame ||
+    // (<any>window).msRequestAnimationFrame ||
+    const loop = async () => {
+      while (true) {
+        await callback(1);
+        await timeout(1000 / 120);
+        // async function (callback: (elapsedTime: number) => Promise<void>) {
+        //   await callback(1);
+        //   window.setTimeout(loop, 1000 / 120, new Date().getTime());
+        // };
       }
-    );
-  })();
+    };
+    loop();
+  };
   urlParams = parseUrlParams();
 }
 

@@ -240,7 +240,7 @@ Actors.ActorFactory.registerActorDef({
   abstract: true,
   ch: "$",
   containerQualifier: true,
-  pickable: { weight: 0.05 },
+  pickable: { price: 1, weight: 0.05 },
   plural: true,
   prototypes: [ACTOR_TYPES.ITEM],
 });
@@ -294,7 +294,7 @@ Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.PICKABLE_CONTAINER,
   abstract: true,
   color: WOOD_COLOR,
-  pickable: { weight: 0.2 },
+  pickable: { price: -1, weight: 0.2 },
   prototypes: [ACTOR_TYPES.CONTAINER, ACTOR_TYPES.ITEM],
 });
 
@@ -373,6 +373,7 @@ Actors.ActorFactory.registerActorDef({
       },
       targetSelector: { method: Actors.TargetSelectionMethodEnum.WEARER },
     },
+    price: 10,
     weight: 0.5,
   },
   prototypes: [ACTOR_TYPES.POTION],
@@ -410,6 +411,7 @@ Actors.ActorFactory.registerActorDef({
       },
       targetSelector: { method: Actors.TargetSelectionMethodEnum.WEARER },
     },
+    price: 20,
     weight: 0.5,
   },
   prototypes: [ACTOR_TYPES.POTION],
@@ -454,6 +456,7 @@ Actors.ActorFactory.registerActorDef({
       },
       targetSelector: { method: Actors.TargetSelectionMethodEnum.WEARER },
     },
+    price: 10,
     weight: 0.5,
   },
   prototypes: [ACTOR_TYPES.POTION],
@@ -464,6 +467,7 @@ Actors.ActorFactory.registerActorDef({
   color: STEEL_COLOR,
   containerQualifier: true,
   pickable: {
+    price: -1,
     weight: 2,
   },
   prototypes: [ACTOR_TYPES.ITEM],
@@ -495,6 +499,7 @@ Actors.ActorFactory.registerActorDef({
         range: 5,
       },
     },
+    price: 10,
     weight: 0.1,
   },
   prototypes: [ACTOR_TYPES.SCROLL],
@@ -517,6 +522,7 @@ Actors.ActorFactory.registerActorDef({
         range: 10,
       },
     },
+    price: 10,
     weight: 0.1,
   },
   prototypes: [ACTOR_TYPES.SCROLL],
@@ -542,6 +548,7 @@ Actors.ActorFactory.registerActorDef({
         range: 5,
       },
     },
+    price: 10,
     weight: 0.1,
   },
   prototypes: [ACTOR_TYPES.SCROLL],
@@ -580,6 +587,7 @@ Actors.ActorFactory.registerActorDef({
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
       },
     },
+    price: 10,
     weight: 0.5,
   },
   prototypes: [ACTOR_TYPES.BLADE],
@@ -601,6 +609,7 @@ Actors.ActorFactory.registerActorDef({
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
       },
     },
+    price: 10,
     weight: 2,
   },
   prototypes: [ACTOR_TYPES.BLADE],
@@ -622,6 +631,7 @@ Actors.ActorFactory.registerActorDef({
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
       },
     },
+    price: 10,
     weight: 3,
   },
   prototypes: [ACTOR_TYPES.BLADE],
@@ -643,6 +653,7 @@ Actors.ActorFactory.registerActorDef({
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
       },
     },
+    price: 10,
     weight: 4,
   },
   prototypes: [ACTOR_TYPES.BLADE],
@@ -669,6 +680,7 @@ Actors.ActorFactory.registerActorDef({
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
       },
     },
+    price: 10,
     weight: 5,
   },
   prototypes: [ACTOR_TYPES.WEAPON],
@@ -736,6 +748,7 @@ Actors.ActorFactory.registerActorDef({
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
       },
     },
+    price: 10,
     weight: 0.1,
   },
   prototypes: [ACTOR_TYPES.ARROW],
@@ -746,7 +759,10 @@ Actors.ActorFactory.registerActorDef({
   abstract: true,
   ch: ")",
   color: WOOD_COLOR,
-  pickable: { weight: 2 },
+  pickable: {
+    price: 10,
+    weight: 2,
+  },
   prototypes: [ACTOR_TYPES.WEAPON],
 });
 
@@ -786,7 +802,10 @@ Actors.ActorFactory.registerActorDef({
   color: WOOD_COLOR,
   containerQualifier: true,
   equipment: { slots: [Actors.SLOT_RIGHT_HAND] },
-  pickable: { weight: 0.5 },
+  pickable: {
+    price: 10,
+    weight: 0.5,
+  },
   prototypes: [ACTOR_TYPES.WEAPON],
 });
 Actors.ActorFactory.registerActorDef({
@@ -821,7 +840,10 @@ Actors.ActorFactory.registerActorDef({
   color: WOOD_COLOR,
   containerQualifier: true,
   equipment: { slots: [Actors.SLOT_RIGHT_HAND, Actors.SLOT_LEFT_HAND] },
-  pickable: { weight: 3 },
+  pickable: {
+    price: 10,
+    weight: 3,
+  },
   prototypes: [ACTOR_TYPES.WEAPON],
 });
 Actors.ActorFactory.registerActorDef({
@@ -897,6 +919,7 @@ Actors.ActorFactory.registerActorDef({
       message: "[The actor1] read[s] [its] scroll of mapping.",
       targetSelector: { method: Actors.TargetSelectionMethodEnum.WEARER },
     },
+    price: 10,
     weight: 0.1,
   },
   prototypes: [ACTOR_TYPES.SCROLL],
@@ -906,7 +929,10 @@ Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.KEY,
   ch: "-",
   color: GOLD_COLOR,
-  pickable: { weight: 0.1 },
+  pickable: {
+    price: -1,
+    weight: 0.1,
+  },
   prototypes: [ACTOR_TYPES.ITEM],
 });
 

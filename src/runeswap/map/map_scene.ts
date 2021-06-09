@@ -134,6 +134,16 @@ export abstract class MapScene
         type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
       },
       {
+        name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.SACRIFICE_ITEM],
+        positiveButton: Umbra.KeyCodeEnum.DOM_VK_S,
+        type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
+      },
+      {
+        name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.SACRIFICE_ITEM],
+        positiveButton: Umbra.KeyCodeEnum.DOM_VK_P,
+        type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
+      },
+      {
         name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.DROP_ITEM],
         positiveButton: Umbra.KeyCodeEnum.DOM_VK_D,
         type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,

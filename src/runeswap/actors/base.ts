@@ -62,6 +62,7 @@ export enum PlayerActionEnum {
   WAIT,
   GRAB,
   USE_ITEM,
+  SACRIFICE_ITEM,
   DROP_ITEM,
   THROW_ITEM,
   FIRE,

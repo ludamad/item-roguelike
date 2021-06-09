@@ -98,7 +98,7 @@ export class Application {
       this.options.fontFileName || Constants.DEFAULT_FONT_FILE_NAME
     );
     SceneManager.runScene(startingScene);
-    Yendor.loop((time) => this.onNewFrame(time));
+    Yendor.loop(async (time) => await this.onNewFrame(time));
   }
 
   /**
@@ -122,7 +122,7 @@ export class Application {
    * Function: onNewFrame
    * Called when the browser renders a new animation frame
    */
-  protected async onNewFrame(time: number): void {
+  protected async onNewFrame(time: number): Promise<void> {
     try {
       this._elapsedTime = time - this._gameTime;
       let scene: Scene = SceneManager.getRunningScene();

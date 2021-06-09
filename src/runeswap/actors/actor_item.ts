@@ -738,6 +738,7 @@ export class Pickable implements IActorFeature {
    */
   private onThrowEffector: Effector;
   private _weight: number;
+  public price: number;
   private _destroyedWhenThrown: boolean = false;
   private _containerId: ActorId | undefined;
 
@@ -757,6 +758,7 @@ export class Pickable implements IActorFeature {
   constructor(def: IPickableDef) {
     if (def) {
       this._weight = def.weight;
+      this.price = def.price;
       if (def.destroyedWhenThrown) {
         this._destroyedWhenThrown = def.destroyedWhenThrown;
       }
@@ -1212,37 +1214,28 @@ export class Ranged implements IActorFeature {
     }
   }
 
-  public fire(wearer: Actor, weapon: Actor): Promise<boolean> {
-    return new Promise<boolean>((resolve) => {
-      let projectile: Actor | undefined = this.findCompatibleProjectile(wearer);
-      if (!projectile) {
-        // no projectile found. cannot fire
-        if (wearer === Actor.specialActors[SpecialActorsEnum.PLAYER]) {
-          Umbra.logger.warn("No " + this._projectileType + " available.");
-          resolve(false);
-        }
-      } else {
-        this.projectileId = projectile.id;
-        Umbra.logger.info(
-          transformMessage(
-            "[The actor1] fire[s] [a actor2].",
-            wearer,
-            projectile
-          )
-        );
-        projectile.pickable
-          .throw(
-            projectile,
-            wearer,
-            true,
-            this._range,
-            weapon.ranged.damageCoef
-          )
-          .then(() => {
-            resolve(true);
-          });
+  public async fire(wearer: Actor, weapon: Actor): Promise<boolean> {
+    let projectile: Actor | undefined = this.findCompatibleProjectile(wearer);
+    if (!projectile) {
+      // no projectile found. cannot fire
+      if (wearer === Actor.specialActors[SpecialActorsEnum.PLAYER]) {
+        Umbra.logger.warn("No " + this._projectileType + " available.");
       }
-    });
+      return false;
+    } else {
+      this.projectileId = projectile.id;
+      Umbra.logger.info(
+        transformMessage("[The actor1] fire[s] [a actor2].", wearer, projectile)
+      );
+      await projectile.pickable.throw(
+        projectile,
+        wearer,
+        true,
+        this._range,
+        weapon.ranged.damageCoef
+      );
+      return true;
+    }
   }
 
   private findCompatibleProjectile(wearer: Actor): Actor | undefined {

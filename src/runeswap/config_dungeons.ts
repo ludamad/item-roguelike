@@ -80,8 +80,8 @@ function getMonEntries(
   for (const [clazz, v] of Object.entries(Actors.ActorFactory.actorDefs)) {
     if (
       v.destructible &&
-      v.destructible.xp >= xpLow &&
-      v.destructible.xp <= xpHigh
+      (v.destructible.xp ?? 0) >= xpLow &&
+      (v.destructible.xp ?? 0) <= xpHigh
     ) {
       console.log(clazz, v.destructible.xp);
       entries.push({
