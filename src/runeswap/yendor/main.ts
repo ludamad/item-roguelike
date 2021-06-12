@@ -15,7 +15,7 @@ export * from "./behavior";
 export * from "./behavior_action";
 export * from "./behavior_composite";
 export * from "./behavior_decorator";
-
+import { timeout } from "./jsUtils";
 import * as Core from "../core/main";
 import { Console, URL_PARAM_RENDERER, URL_PARAM_RENDERER_DIV } from "./console";
 import { DivConsoleRenderer } from "./console_div";
@@ -181,20 +181,20 @@ export function createConsole(
  * Renders the game screen
  */
 export interface IFrameRenderer {
-  (elapsedTime: number): void;
+  (elapsedTime: number): Promise<void>;
 }
 
 let renderer: IFrameRenderer;
-function frameFunc(elapsedTime: number) {
+async function frameFunc(elapsedTime: number) {
   frameLoop(frameFunc);
-  renderer(elapsedTime);
+  await renderer(elapsedTime);
 }
 
 /**
  * Function: loop
  * Start the frame rendering loop.
  */
-export function loop(theRenderer: IFrameRenderer) {
+export async function loop(theRenderer: IFrameRenderer) {
   renderer = theRenderer;
   frameLoop(frameFunc);
 }

@@ -176,18 +176,15 @@ export class TargetSelector {
         break;
       case TargetSelectionMethodEnum.SELECTED_RANGE:
         if (wearer.ai && wearer.ai.tilePicker) {
-          return new Promise<Actor[]>((resolve) => {
+          return new Promise<Actor[]>(async (resolve) => {
             if (wearer.ai.tilePicker) {
-              wearer.ai.tilePicker
-                .pickATile(
-                  "Left-click a target tile,\nor right-click to cancel.",
-                  new Core.Position(wearer.pos.x, wearer.pos.y),
-                  this._range,
-                  this._radius
-                )
-                .then((pos: Core.Position) => {
-                  resolve(this.onTileSelected(pos));
-                });
+              const pos = await wearer.ai.tilePicker.pickATile(
+                "Left-click a target tile,\nor right-click to cancel.",
+                new Core.Position(wearer.pos.x, wearer.pos.y),
+                this._range,
+                this._radius
+              );
+              resolve(this.onTileSelected(pos));
             }
           });
         }
@@ -335,14 +332,14 @@ export class InstantHealthEffect extends Effect {
 
   private applyWoundingEffectTo(
     actor: Actor,
-    coef: number = 1.0
+    damageBonus: number = 1.0
   ): EffectResult {
     if (actor.destructible.isDead()) {
       return EffectResult.FAILURE;
     }
     let realdefence: number = actor.destructible.computeRealDefence(actor);
-    let damageDealt = -this._amount * coef - realdefence;
     let wearer: Actor | undefined = actor.getWearer();
+    let damageDealt = -this._amount + damageBonus - realdefence;
     if (damageDealt > 0 && this.successMessage) {
       Umbra.logger.info(
         transformMessage(this.successMessage, actor, wearer, damageDealt)
@@ -351,7 +348,7 @@ export class InstantHealthEffect extends Effect {
       Umbra.logger.info(transformMessage(this.failureMessage, actor, wearer));
     }
     return Effect.booleanToEffectResult(
-      actor.destructible.takeRawDamage(actor, -this._amount * coef) || true,
+      actor.destructible.takeRawDamage(actor, damageDealt) || true,
       this._singleActor
     );
   }

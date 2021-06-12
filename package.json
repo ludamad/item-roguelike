@@ -20,7 +20,8 @@
     "fantasy-name-generator": "^2.0.0",
     "jquery": "2",
     "parcel": "^2.0.0-beta.2",
-    "pixi.js": "~5.3.3"
+    "pixi.js": "~5.3.3",
+    "rxjs": "^7.1.0"
   },
   "targets": {
     "app": {}

@@ -490,7 +490,7 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
       this.dungeonLevel = portal.mapId;
       Map.currentIndex = portal.mapId;
       player.moveTo(portal.pos.x, portal.pos.y);
-      Umbra.logger.warn("Level..." + this.dungeonLevel);
+      Umbra.logger.warn("Level..." + (this.dungeonLevel + 1));
       this.renderer.initForNewMap();
     }
   }

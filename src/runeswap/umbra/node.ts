@@ -265,6 +265,17 @@ export class Node extends Core.TreeNode {
     }
   }
 
+  public async updateHierarchyForType(time: number, type: any): Promise<void> {
+    if (this.visible) {
+      for (let child of this.children) {
+        await (<Node>child).updateHierarchyForType(time, type);
+      }
+      if (this instanceof type) {
+        await this.onUpdate(time);
+      }
+    }
+  }
+
   /**
    * Function: termHierarchy
    * Terminate this node children in descending zOrder, then this node.

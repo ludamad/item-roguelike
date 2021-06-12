@@ -350,7 +350,7 @@ export class Attacker implements IActorFeature {
         const xpGain = Math.max(0, target.destructible.xp - levelTax);
         if (owner.xpHolder && xpGain) {
           msg +=
-            "\n[The actor2] [is2] dead. [The actor1] aborb[s] " +
+            "\n[The actor2] [is2] dead. [The actor1] absorb[s] " +
             xpGain +
             " life.";
           gainedXp = xpGain;
@@ -954,34 +954,28 @@ export class Pickable implements IActorFeature {
    * maxRange - maximum distance where the item can be thrown.
    *      If not defined, max range is computed from the item's weight
    */
-  public throw(
+  public async throw(
     owner: Actor,
     wearer: Actor,
     fromFire: boolean,
     maxRange?: number,
     damageCoef?: number
   ): Promise<void> {
-    return new Promise<void>((resolve) => {
-      if (!maxRange) {
-        maxRange = owner.computeThrowRange(wearer);
-      }
-      // create a Core.Position instead of using directly wearer to avoid TilePicker
-      // -> actor dependency which would break json serialization
-      if (wearer.ai.tilePicker) {
-        wearer.ai.tilePicker
-          .pickATile(
-            "Left-click where to throw the " +
-              owner.name +
-              ",\nor right-click to cancel.",
-            new Core.Position(wearer.pos.x, wearer.pos.y),
-            maxRange
-          )
-          .then((pos: Core.Position) => {
-            this.throwOnPos(owner, wearer, fromFire, pos, damageCoef);
-            resolve();
-          });
-      }
-    });
+    if (!maxRange) {
+      maxRange = owner.computeThrowRange(wearer);
+    }
+    // create a Core.Position instead of using directly wearer to avoid TilePicker
+    // -> actor dependency which would break json serialization
+    if (wearer.ai.tilePicker) {
+      const pos = await wearer.ai.tilePicker.pickATile(
+        "Left-click where to throw the " +
+          owner.name +
+          ",\nor right-click to cancel.",
+        new Core.Position(wearer.pos.x, wearer.pos.y),
+        maxRange
+      );
+      this.throwOnPos(owner, wearer, fromFire, pos, damageCoef);
+    }
   }
 
   private throwOnPos(
@@ -1237,7 +1231,8 @@ export class Ranged implements IActorFeature {
         wearer,
         true,
         this._range,
-        weapon ? weapon.ranged.damageCoef : 1
+        // wearerweapon ? weapon.ranged.damageCoef : 1
+        wearer.xpHolder ? wearer.xpHolder.xpLevel + 4 : 0
       );
       return true;
     }

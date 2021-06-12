@@ -8,6 +8,7 @@ import * as Constants from "./constants";
 import { Scene, SceneManager } from "./scene";
 import { logger } from "./main";
 import { resetInput } from "./input";
+import { Widget } from "../gui/main";
 
 export interface IApplicationOptions {
   consoleWidth?: number;
@@ -118,6 +119,8 @@ export class Application {
     resetInput();
   }
 
+  rendering = false;
+
   /**
    * Function: onNewFrame
    * Called when the browser renders a new animation frame
@@ -130,7 +133,13 @@ export class Application {
         this._gameTime = time;
         // update the game only options.ticksPerSecond per second
         if (!this.paused) {
-          await scene.updateHierarchy(time);
+          if (!this.rendering) {
+            this.rendering = true;
+            await scene.updateHierarchy(time);
+            this.rendering = false;
+          } else {
+            await scene.updateHierarchyForType(time, Widget);
+          }
           scene.computeBoundingBox();
           scene.expand(this.console.width, this.console.height);
           resetInput();
@@ -138,13 +147,13 @@ export class Application {
         }
       }
       // but render every frame to allow background animations (torch flickering, ...)
-      if (!this.paused && this.dirtyFrame) {
-        scene.renderHierarchy(this.console);
-        this.console.render();
-        if (!this.options.backgroundAnimation) {
-          this.dirtyFrame = false;
-        }
+      // if (!this.paused && this.dirtyFrame) {
+      scene.renderHierarchy(this.console);
+      this.console.render();
+      if (!this.options.backgroundAnimation) {
+        this.dirtyFrame = false;
       }
+      // }
     } catch (err) {
       console.log(err.stack);
       logger.critical(err.fileName + ":" + err.lineNumber + "\n" + err.message);
