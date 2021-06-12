@@ -49,7 +49,7 @@ let lootProbabilities: Actors.IProbabilityMap = {
 let itemProbabilities: Actors.IProbabilityMap = {
   classProb: [
     ...lootProbabilities.classProb,
-    // { clazz: ACTOR_TYPES.IRON_ARROW, prob: 5 },
+    { clazz: ACTOR_TYPES.STONE, prob: 5 },
     { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 100 },
     {
       clazz: ACTOR_TYPES.HEALTH_POTION,
@@ -80,10 +80,10 @@ function getMonEntries(
   for (const [clazz, v] of Object.entries(Actors.ActorFactory.actorDefs)) {
     if (
       v.destructible &&
-      (v.destructible.xp ?? 0) >= xpLow &&
-      (v.destructible.xp ?? 0) <= xpHigh
+      v.destructible.xp &&
+      v.destructible.xp >= xpLow &&
+      v.destructible.xp <= xpHigh
     ) {
-      console.log(clazz, v.destructible.xp);
       entries.push({
         clazz,
         prob: [

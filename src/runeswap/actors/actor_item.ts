@@ -332,7 +332,9 @@ export class Attacker implements IActorFeature {
    */
   public attack(owner: Actor, target: Actor) {
     if (target.destructible && !target.destructible.isDead()) {
-      const basePower = owner.xpHolder ? 4 + owner.xpHolder.xpLevel : 0;
+      const basePower = owner.xpHolder
+        ? 4 + owner.xpHolder.demonicFavorLevel + owner.xpHolder.xpLevel
+        : 0;
       let damage = Math.max(
         0,
         this.power + basePower - target.destructible.computeRealDefence(target)
@@ -938,7 +940,7 @@ export class Pickable implements IActorFeature {
     } else if (owner.equipment) {
       owner.equipment.use(owner, wearer);
     } else if (owner.activable) {
-      owner.activable.activate(owner);
+      await owner.activable.activate(owner);
     }
     return true;
   }
@@ -1214,7 +1216,10 @@ export class Ranged implements IActorFeature {
     }
   }
 
-  public async fire(wearer: Actor, weapon: Actor): Promise<boolean> {
+  public async fire(
+    wearer: Actor,
+    weapon: Actor | undefined
+  ): Promise<boolean> {
     let projectile: Actor | undefined = this.findCompatibleProjectile(wearer);
     if (!projectile) {
       // no projectile found. cannot fire
@@ -1232,7 +1237,7 @@ export class Ranged implements IActorFeature {
         wearer,
         true,
         this._range,
-        weapon.ranged.damageCoef
+        weapon ? weapon.ranged.damageCoef : 1
       );
       return true;
     }

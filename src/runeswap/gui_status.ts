@@ -137,25 +137,25 @@ export class StatusPanel
       1,
       2,
       Constants.STAT_BAR_WIDTH,
-      "Level " + player.xpHolder.xpLevel + " XP",
+      "Level " + player.xpHolder.xpLevel + ": ",
       player.xpHolder.xp,
       player.xpHolder.getNextLevelXp(),
       Constants.XP_BAR_BACKGROUND,
       Constants.XP_BAR_FOREGROUND
     );
-    this.renderBar(
-      1,
-      3,
-      Constants.STAT_BAR_WIDTH,
-      "Favor " + player.xpHolder.xpLevel + " XP",
-      player.xpHolder.xp,
-      player.xpHolder.getNextLevelXp(),
-      Constants.FAVOR_BAR_BACKGROUND,
-      Constants.FAVOR_BAR_FOREGROUND
-    );
+    // this.renderBar(
+    //   1,
+    //   3,
+    //   Constants.STAT_BAR_WIDTH,
+    //   "Favor " + player.xpHolder.demonicFavorLevel + ": ",
+    //   player.xpHolder.demonicFavorXp,
+    //   player.xpHolder.getNextDemonicLevelXp(),
+    //   Constants.FAVOR_BAR_BACKGROUND,
+    //   Constants.FAVOR_BAR_FOREGROUND
+    // );
     this.console.print(
       1,
-      4,
+      3,
       "Power " +
         (player.xpHolder.demonicFavorLevel +
           player.xpHolder.xpLevel +
@@ -164,7 +164,7 @@ export class StatusPanel
     );
     this.console.print(
       10,
-      4,
+      3,
       "Defence " + player.destructible.computeRealDefence(player)
     );
 

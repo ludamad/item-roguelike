@@ -1,27 +1,31 @@
 {
-    "name": "yendor.ts",
-    "version": "0.8.0",
-    "private": true,
-    "scripts": {
-        "build": "parcel build --target app index.html",
-        "start": "tsc --noEmit && parcel index.html --no-cache"
-    },
-    "devDependencies": {
-        "babel-plugin-const-enum": "^1.0.1",
-        "typescript": "^4.3.2"
-    },
-    "dependencies": {
-        "@types/jquery": "2.0.32",
-        "@types/pixi.js": "^3.0.30",
-        "dexie": "1.4.1",
-        "express": "4.13.1",
-        "fantasy-content-generator": "^4.6.7",
-        "fantasy-name-generator": "^2.0.0",
-        "jquery": "2",
-        "parcel": "^2.0.0-beta.2",
-        "pixi.js": "~5.3.3"
-    },
-    "targets": {
-        "app": {}
-    }
+  "name": "yendor.ts",
+  "version": "0.8.0",
+  "private": true,
+  "scripts": {
+    "build": "parcel build --target app index.html",
+    "start": "parcel index.html --no-cache"
+  },
+  "devDependencies": {
+    "@babel/plugin-transform-async-to-generator": "^7.14.5",
+    "babel-plugin-const-enum": "^1.0.1",
+    "typescript": "^4.3.2"
+  },
+  "dependencies": {
+    "@types/jquery": "2.0.32",
+    "@types/pixi.js": "^3.0.30",
+    "dexie": "1.4.1",
+    "express": "4.13.1",
+    "fantasy-content-generator": "^4.6.7",
+    "fantasy-name-generator": "^2.0.0",
+    "jquery": "2",
+    "parcel": "^2.0.0-beta.2",
+    "pixi.js": "~5.3.3"
+  },
+  "targets": {
+    "app": {}
+  },
+  "browserslist": [
+    "Firefox > 20"
+  ]
 }

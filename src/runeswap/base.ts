@@ -20,8 +20,8 @@ export const HEALTH_BAR_FOREGROUND: Core.Color = 0x7f3f3f;
 export const HEALTH_BAR_GOOD_FOREGROUND: Core.Color = 0x1f3f1f;
 export const XP_BAR_BACKGROUND: Core.Color = 0x9f3fff;
 export const XP_BAR_FOREGROUND: Core.Color = 0x3f007f;
-export const FAVOR_BAR_BACKGROUND: Core.Color = 0xeeeeee;
-export const FAVOR_BAR_FOREGROUND: Core.Color = 0x3f007f;
+export const FAVOR_BAR_BACKGROUND: Core.Color = 0xff3f9f;
+export const FAVOR_BAR_FOREGROUND: Core.Color = 0x7f003f;
 export const CONDITION_BAR_BACKGROUND: Core.Color = 0x3f9f3f;
 export const CONDITION_BAR_FOREGROUND: Core.Color = 0x007f3f;
 export const INVENTORY_BACKGROUND_ACTIVE: Core.Color = 0x383830;
@@ -170,6 +170,8 @@ export const ACTOR_TYPES = {
   PROJECTILE: "projectile[s]",
   ARROW: "arrow[s]",
   IRON_ARROW: "iron arrow[s]",
+  THROWN: "thrown[s]",
+  STONE: "stone[s]",
   KEY: "key[s]",
   DEVICE: "device[s]",
   STAIRS: "stairs",

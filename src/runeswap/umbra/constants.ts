@@ -11,7 +11,7 @@ export const DEFAULT_BACKGROUND_COLOR: Core.Color = "#000000";
 export const DEFAULT_FOREGROUND_COLOR: Core.Color = "#FFFFFF";
 export const DEFAULT_DIV_SELECTOR: string = "#console";
 export const DEFAULT_FONT_FILE_NAME: string = imageUrl;
-export const DEFAULT_TICKS_PER_SECOND: number = 10;
+export const DEFAULT_TICKS_PER_SECOND: number = 120;
 export const DEFAULT_BACKGROUND_ANIMATION: boolean = false;
 
 // built-in event types

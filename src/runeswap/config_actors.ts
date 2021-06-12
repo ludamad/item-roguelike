@@ -212,7 +212,12 @@ Actors.ActorFactory.registerActorDef({
   attacker: { attackTime: Actors.PLAYER_WALK_TIME, hitPoints: 2 },
   blockWalk: false,
   color: 0xffffff,
-  destructible: { corpseName: "your cadaver", defence: 0, healthPoints: 25 },
+  destructible: {
+    corpseName: "your cadaver",
+    defence: 0,
+    healthPoints: 25,
+    xp: 0,
+  },
   light: {
     color: 0xffffff,
     falloffType: Actors.LightFalloffTypeEnum.NORMAL,
@@ -364,7 +369,7 @@ Actors.ActorFactory.registerActorDef({
     onUseEffector: {
       destroyOnEffect: true,
       effect: <IInstantHealthEffectDef>{
-        amount: 10,
+        amount: 20,
         failureMessage:
           "[The actor1] drink[s] the health potion but it has no effect",
         successMessage:
@@ -373,7 +378,7 @@ Actors.ActorFactory.registerActorDef({
       },
       targetSelector: { method: Actors.TargetSelectionMethodEnum.WEARER },
     },
-    price: 10,
+    price: 20,
     weight: 0.5,
   },
   prototypes: [ACTOR_TYPES.POTION],
@@ -587,7 +592,7 @@ Actors.ActorFactory.registerActorDef({
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
       },
     },
-    price: 10,
+    price: 1,
     weight: 0.5,
   },
   prototypes: [ACTOR_TYPES.BLADE],
@@ -609,7 +614,7 @@ Actors.ActorFactory.registerActorDef({
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
       },
     },
-    price: 10,
+    price: 5,
     weight: 2,
   },
   prototypes: [ACTOR_TYPES.BLADE],
@@ -631,7 +636,7 @@ Actors.ActorFactory.registerActorDef({
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
       },
     },
-    price: 10,
+    price: 5,
     weight: 3,
   },
   prototypes: [ACTOR_TYPES.BLADE],
@@ -653,7 +658,7 @@ Actors.ActorFactory.registerActorDef({
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
       },
     },
-    price: 10,
+    price: 15,
     weight: 4,
   },
   prototypes: [ACTOR_TYPES.BLADE],
@@ -680,7 +685,7 @@ Actors.ActorFactory.registerActorDef({
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
       },
     },
-    price: 10,
+    price: 5,
     weight: 5,
   },
   prototypes: [ACTOR_TYPES.WEAPON],
@@ -723,6 +728,35 @@ Actors.ActorFactory.registerActorDef({
   containerQualifier: true,
   equipment: { slots: [Actors.SLOT_QUIVER] },
   prototypes: [ACTOR_TYPES.WEAPON],
+});
+
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.THROWN,
+  abstract: true,
+  containerQualifier: true,
+  prototypes: [ACTOR_TYPES.PROJECTILE],
+});
+
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.STONE,
+  color: BONE_COLOR,
+  pickable: {
+    onThrowEffector: {
+      destroyOnEffect: true,
+      effect: <IInstantHealthEffectDef>{
+        amount: -2,
+        successMessage: "The stone hits [the actor1] for [value1] damage.",
+        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+        singleActor: true,
+      },
+      targetSelector: {
+        method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
+      },
+    },
+    price: 10,
+    weight: 0.1,
+  },
+  prototypes: [ACTOR_TYPES.ARROW],
 });
 
 Actors.ActorFactory.registerActorDef({

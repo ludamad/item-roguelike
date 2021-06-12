@@ -105,7 +105,14 @@ export abstract class DungeonScene
       actor.isA(ACTOR_TYPES.STAIRS_UP)
     );
     player.moveTo(stairsUp.pos.x, stairsUp.pos.y);
-    Actors.ActorFactory.createInContainer(player, [ACTOR_TYPES.KNIFE]);
+    Actors.ActorFactory.createInContainer(player, [
+      ACTOR_TYPES.KNIFE,
+      ACTOR_TYPES.STONE,
+      ACTOR_TYPES.STONE,
+      ACTOR_TYPES.STONE,
+      ACTOR_TYPES.STONE,
+      ACTOR_TYPES.STONE,
+    ]);
     Actors.Actor.describeCell(player.pos);
   }
 
@@ -193,7 +200,10 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
   }
 
   public get dungeonDetails(): DungeonDetails {
-    return findBranch(this.storyConfig.dungeon, this.dungeonLevel) as DungeonDetails;
+    return findBranch(
+      this.storyConfig.dungeon,
+      this.dungeonLevel
+    ) as DungeonDetails;
   }
   public onTerm() {
     super.onTerm();

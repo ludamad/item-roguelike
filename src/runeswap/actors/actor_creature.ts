@@ -12,11 +12,12 @@ import {
   PlayerActionEnum,
   getLastPlayerAction,
   convertActionToPosition,
+  PLAYER_WALK_TIME,
 } from "./base";
 import { Actor, SpecialActorsEnum } from "./actor";
 import { ConditionTypeEnum, IXpHolderDef } from "./actor_def";
 import { Condition } from "./actor_condition";
-import { IContainerListener, Attacker, Container } from "./actor_item";
+import { IContainerListener, Attacker, Container, Ranged } from "./actor_item";
 import {
   SLOT_BOTH_HANDS,
   SLOT_LEFT_HAND,
@@ -614,10 +615,23 @@ export class PlayerAi extends BaseAi {
     owner.scheduler.pause();
     return false;
   }
+  _findActorAt(pos: Core.Position) {
+    for (const actor of Map.Map.current.actorList) {
+      if (actor.pos.equals(pos)) {
+        return actor;
+      }
+    }
+    return undefined;
+  }
   autoExplore(owner: Actor) {
     const enemy = findNearestEnemy(owner.pos);
     if (enemy) {
-      Umbra.logger.error("You can't explore, you see an enemy!");
+      Umbra.logger.error(
+        transformMessage(
+          "You cannot explore, you see [a actor1].",
+          this._findActorAt(enemy)
+        )
+      );
       owner.map.setDirty();
       owner.scheduler.pause();
       return;
@@ -718,6 +732,8 @@ export class PlayerAi extends BaseAi {
         if (this.pickupItem(owner)) {
           owner.wait(this.walkTime);
           owner.scheduler.resume();
+        } else {
+          owner.scheduler.pause();
         }
         break;
       case PlayerActionEnum.USE_ITEM:
@@ -726,10 +742,16 @@ export class PlayerAi extends BaseAi {
             "use an item",
             owner
           );
+          if (!item) {
+            owner.scheduler.pause();
+            return;
+          }
           const used = await this.useItem(owner, item);
           if (used) {
             owner.wait(this.walkTime);
             owner.scheduler.resume();
+          } else {
+            owner.scheduler.pause();
           }
         }
         break;
@@ -739,10 +761,16 @@ export class PlayerAi extends BaseAi {
             "sacrifice an item",
             owner
           );
+          if (!item) {
+            owner.scheduler.pause();
+            return;
+          }
           const used = await this.sacrificeItem(owner, item);
           if (used) {
             owner.wait(this.walkTime);
             owner.scheduler.resume();
+          } else {
+            owner.scheduler.pause();
           }
         }
         break;
@@ -752,10 +780,16 @@ export class PlayerAi extends BaseAi {
             "drop an item",
             owner
           );
+          if (!item) {
+            owner.scheduler.pause();
+            return;
+          }
           const used = await this.dropItem(owner, item);
           if (used) {
             owner.wait(this.walkTime);
             owner.scheduler.resume();
+          } else {
+            owner.scheduler.pause();
           }
         }
         break;
@@ -765,10 +799,16 @@ export class PlayerAi extends BaseAi {
             "throw an item",
             owner
           );
+          if (!item) {
+            owner.scheduler.pause();
+            return;
+          }
           const used = await this.throwItem(owner, item);
           if (used) {
             owner.wait(this.walkTime);
             owner.scheduler.resume();
+          } else {
+            owner.scheduler.pause();
           }
         }
         break;
@@ -805,9 +845,16 @@ export class PlayerAi extends BaseAi {
       weapon = owner.container.getFromSlot(SLOT_LEFT_HAND);
     }
     if (!weapon || !weapon.ranged) {
-      Umbra.logger.error("You have no ranged weapon equipped.");
-      owner.scheduler.pause();
-      return false;
+      const synthetic = new Ranged({
+        damageCoef: 1,
+        projectileType: "stone[s]",
+        loadTime: 0,
+        range: 9,
+      });
+      return await synthetic.fire(owner, undefined);
+      // Umbra.logger.error("You have no ranged weapon equipped.");
+      // owner.scheduler.pause();
+      // return false;
     }
     return await weapon.ranged.fire(owner, weapon);
   }
@@ -844,8 +891,13 @@ export class PlayerAi extends BaseAi {
     if (item.pickable) {
       if (item.pickable.price > 0) {
         item.destroy();
-        owner.xpHolder.addDemonicFavor(owner, item.pickable.price);
+        owner.xpHolder.addXp(owner, item.pickable.price);
+        // owner.xpHolder.addDemonicFavor(owner, item.pickable.price);
         return true;
+      } else {
+        Umbra.logger.warn(
+          transformMessage("You cannot sacrifice [the actor1].", item)
+        );
       }
     }
     return false;
@@ -939,7 +991,7 @@ export class XpHolder implements IActorFeature {
   private newLevel: number;
   private _xp: number = 0;
   public demonicFavorXp: number = 0;
-  public demonicFavorLevel: number = 0;
+  public demonicFavorLevel: number = 1;
 
   constructor(def: IXpHolderDef) {
     if (def) {
@@ -995,7 +1047,7 @@ export class XpHolder implements IActorFeature {
     } else {
       Umbra.logger.error(
         transformMessage(
-          `[The actor1's] gains favor with ${
+          `[The actor1] gain[s] favor with ${
             getEngine().storyConfig.demonName
           }!`,
           owner

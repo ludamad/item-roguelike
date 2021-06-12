@@ -8,12 +8,18 @@ export function getEngine() {
   return engine;
 }
 
+let called = false;
+
 /**
  * This function is called when the document has finished loading in the browser.
  * It creates the root console, register the keyboard and mouse event callbacks, and starts the frame rendering loop.
  */
 $(function () {
   let app: Umbra.Application;
+  if (called) {
+    return;
+  }
+  called = true;
   try {
     app = new Umbra.Application();
     Umbra.init(app);

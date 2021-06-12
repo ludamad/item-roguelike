@@ -641,6 +641,9 @@ export class SlotContainerPanel extends Gui.Widget {
     this.show();
   }
 
+  public onCancel() {
+    this.resolve(undefined);
+  }
   public onUpdate(time: number) {
     super.onUpdate(time);
     this.setFrameFooter(
@@ -795,8 +798,8 @@ export class InventoryPanel
     title: string,
     wearer: Actors.Actor,
     itemClassFilter?: string
-  ): Promise<Actors.Actor> {
-    return new Promise<Actors.Actor>((resolve) => {
+  ): Promise<Actors.Actor | undefined> {
+    return new Promise<Actors.Actor | undefined>((resolve) => {
       this.panel.initForCreature(wearer, resolve, this, itemClassFilter);
       this.panel.setFrameTitle(title + " - ESC to close");
       this.show();
@@ -809,6 +812,7 @@ export class InventoryPanel
 
   private onCancel(): boolean {
     Gui.Draggable.resetDrag();
+    this.panel.onCancel();
     return true;
   }
 }

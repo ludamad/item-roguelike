@@ -1,16 +1,14 @@
 {
-    "compilerOptions": {
-        "module": "amd",
-        "target": "ES6",
-        "sourceMap": true,
-        "outDir": "build",
-        "noImplicitAny": true,
-        "moduleResolution": "node",
-        "strictNullChecks": true,
-        "noUnusedLocals": false,
-        "noUnusedParameters": false
-    },
-    "files": [
-        "src/runeswap/main.ts"
-    ]
+  "compilerOptions": {
+    "module": "amd",
+    "target": "ES5",
+    "sourceMap": true,
+    "outDir": "build",
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "strictNullChecks": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "files": ["src/runeswap/main.ts"]
 }

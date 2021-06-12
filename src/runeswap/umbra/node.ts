@@ -13,7 +13,7 @@ export enum ExpandEnum {
 }
 
 export class Node extends Core.TreeNode {
-  /** bouding box. x,y coordinates relative to parent's top left corner */
+  /** bouding box. x,y coordinates relative to parent's top left corner **/
   protected boundingBox: Core.Rect = new Core.Rect();
   protected _expand: ExpandEnum;
 
