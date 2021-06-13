@@ -27,8 +27,8 @@ let lootProbabilities: Actors.IProbabilityMap = {
       ],
     },
     // { clazz: ACTOR_TYPES.WAND_OF_FROST, prob: 1 },
-    { clazz: ACTOR_TYPES.STAFF_OF_TELEPORTATION, prob: 4 },
-    { clazz: ACTOR_TYPES.STAFF_OF_LIFE_DETECTION, prob: 4 },
+    { clazz: ACTOR_TYPES.SCROLL_OF_TELEPORTATION, prob: 4 },
+    { clazz: ACTOR_TYPES.SCROLL_OF_LIFE_DETECTION, prob: 4 },
     // { clazz: ACTOR_TYPES.SCROLL_OF_MAPPING, prob: 1 },
     {
       clazz: ACTOR_TYPES.WOODEN_SHIELD,
@@ -38,9 +38,11 @@ let lootProbabilities: Actors.IProbabilityMap = {
       ],
     },
     { clazz: ACTOR_TYPES.LONGSWORD, prob: [[1, 2]] },
+    { clazz: ACTOR_TYPES.GREATSWORD, prob: [[2, 1]] },
+    { clazz: ACTOR_TYPES.POWERSWORD, prob: [[4, 1]] },
     { clazz: ACTOR_TYPES.IRON_SHIELD, prob: [[1, 2]] },
-    { clazz: ACTOR_TYPES.GREATSWORD, prob: [[4, 1]] },
-    { clazz: ACTOR_TYPES.GREATSHIELD, prob: [[4, 1]] },
+    { clazz: ACTOR_TYPES.GREATSHIELD, prob: [[2, 1]] },
+    { clazz: ACTOR_TYPES.POWERSHIELD, prob: [[4, 1]] },
   ],
   maxCount: 4,
   minCount: 1,
@@ -49,7 +51,7 @@ let lootProbabilities: Actors.IProbabilityMap = {
 let itemProbabilities: Actors.IProbabilityMap = {
   classProb: [
     ...lootProbabilities.classProb,
-    { clazz: ACTOR_TYPES.STONE, prob: 5 },
+    { clazz: ACTOR_TYPES.TIME_DART, prob: 5 },
     { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 100 },
     {
       clazz: ACTOR_TYPES.HEALTH_POTION,

@@ -107,11 +107,11 @@ export abstract class DungeonScene
     player.moveTo(stairsUp.pos.x, stairsUp.pos.y);
     Actors.ActorFactory.createInContainer(player, [
       ACTOR_TYPES.KNIFE,
-      ACTOR_TYPES.STONE,
-      ACTOR_TYPES.STONE,
-      ACTOR_TYPES.STONE,
-      ACTOR_TYPES.STONE,
-      ACTOR_TYPES.STONE,
+      ACTOR_TYPES.TIME_DART,
+      ACTOR_TYPES.TIME_DART,
+      ACTOR_TYPES.TIME_DART,
+      ACTOR_TYPES.TIME_DART,
+      ACTOR_TYPES.TIME_DART,
     ]);
     Actors.Actor.describeCell(player.pos);
   }
@@ -436,7 +436,6 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
       this.storyConfig = await this.persister.loadFromKey(
         PERSISTENCE_STORY_KEY
       );
-      console.log(this.storyConfig);
       Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER].ai.setPickers(
         this.playerTilePicker,
         this.playerInventoryPicker,
@@ -446,6 +445,9 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
         PERSISTENCE_STATUS_PANEL,
         this.gui.status
       );
+      Actors.Actor.resetCurrentScheduler();
+      const aiActors = Map.current.actorList.filter((a) => !!a.ai);
+      Actors.Actor.currentScheduler.addAll(aiActors);
       Actors.Actor.currentScheduler.pause();
     } catch (err) {
       Umbra.logger.critical("Error while loading game :" + err);

@@ -644,13 +644,13 @@ Actors.ActorFactory.registerActorDef({
 
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.GREATSWORD,
-  attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 10 },
-  equipment: { slots: [Actors.SLOT_BOTH_HANDS] },
+  attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 9 },
+  equipment: { slots: [Actors.SLOT_RIGHT_HAND] },
   pickable: {
     onThrowEffector: {
       destroyOnEffect: false,
       effect: <IInstantHealthEffectDef>{
-        amount: -10,
+        amount: -9,
         successMessage: "The sword hits [the actor1] for [value1] hit points.",
         type: Actors.EffectTypeEnum.INSTANT_HEALTH,
       },
@@ -664,6 +664,27 @@ Actors.ActorFactory.registerActorDef({
   prototypes: [ACTOR_TYPES.BLADE],
 });
 
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.POWERSWORD,
+  attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 13 },
+  equipment: { slots: [Actors.SLOT_RIGHT_HAND] },
+  pickable: {
+    onThrowEffector: {
+      destroyOnEffect: false,
+      effect: <IInstantHealthEffectDef>{
+        amount: -13,
+        successMessage: "The sword hits [the actor1] for [value1] hit points.",
+        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+      },
+      targetSelector: {
+        method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
+      },
+    },
+    price: 30,
+    weight: 4,
+  },
+  prototypes: [ACTOR_TYPES.BLADE],
+});
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.SHIELD,
   abstract: true,
@@ -722,6 +743,16 @@ Actors.ActorFactory.registerActorDef({
 });
 
 Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.POWERSHIELD,
+  color: IRON_COLOR,
+  equipment: {
+    defence: 4,
+    slots: [Actors.SLOT_LEFT_HAND],
+  },
+  prototypes: [ACTOR_TYPES.SHIELD],
+});
+
+Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.PROJECTILE,
   abstract: true,
   ch: "\\",
@@ -738,14 +769,16 @@ Actors.ActorFactory.registerActorDef({
 });
 
 Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.STONE,
+  name: ACTOR_TYPES.TIME_DART,
   color: BONE_COLOR,
+  ch: "\\",
   pickable: {
     onThrowEffector: {
       destroyOnEffect: true,
       effect: <IInstantHealthEffectDef>{
         amount: -2,
-        successMessage: "The stone hits [the actor1] for [value1] damage.",
+        successMessage:
+          "The time dart instantly hits [the actor1] for [value1] damage.",
         type: Actors.EffectTypeEnum.INSTANT_HEALTH,
         singleActor: true,
       },
@@ -756,7 +789,7 @@ Actors.ActorFactory.registerActorDef({
     price: 10,
     weight: 0.1,
   },
-  prototypes: [ACTOR_TYPES.ARROW],
+  prototypes: [ACTOR_TYPES.THROWN],
 });
 
 Actors.ActorFactory.registerActorDef({
@@ -881,11 +914,12 @@ Actors.ActorFactory.registerActorDef({
   prototypes: [ACTOR_TYPES.WEAPON],
 });
 Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.STAFF_OF_TELEPORTATION,
-  magic: {
-    charges: 5,
-    onFireEffect: {
-      destroyOnEffect: false,
+  name: ACTOR_TYPES.SCROLL_OF_TELEPORTATION,
+  pickable: {
+    price: 10,
+    weight: 0.1,
+    onUseEffector: {
+      destroyOnEffect: true,
       effect: <ITeleportEffectDef>{
         successMessage: "[The actor1] disappear[s] suddenly.",
         type: Actors.EffectTypeEnum.TELEPORT,
@@ -898,15 +932,16 @@ Actors.ActorFactory.registerActorDef({
       },
     },
   },
-  prototypes: [ACTOR_TYPES.STAFF, ACTOR_TYPES.MAGIC],
+  prototypes: [ACTOR_TYPES.SCROLL],
 });
 
 Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.STAFF_OF_LIFE_DETECTION,
-  magic: {
-    charges: 5,
-    onFireEffect: {
-      destroyOnEffect: false,
+  name: ACTOR_TYPES.SCROLL_OF_LIFE_DETECTION,
+  pickable: {
+    price: 10,
+    weight: 0.1,
+    onUseEffector: {
+      destroyOnEffect: true,
       effect: <IConditionEffectDef>{
         condition: {
           nbTurns: 30,
@@ -920,7 +955,7 @@ Actors.ActorFactory.registerActorDef({
       targetSelector: { method: Actors.TargetSelectionMethodEnum.WEARER },
     },
   },
-  prototypes: [ACTOR_TYPES.STAFF, ACTOR_TYPES.MAGIC],
+  prototypes: [ACTOR_TYPES.SCROLL],
 });
 
 // name: ACTOR_TYPES.SCROLL_OF_LIGHTNING_BOLT,

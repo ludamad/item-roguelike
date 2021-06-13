@@ -158,7 +158,9 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
     return new Promise<void>((resolve) => {
       persister.loadFromKey(PERSISTENCE_ACTORS_KEY).then((_value) => {
         Map.Map.actorsDb = _value;
+        let floor = 0;
         for (let actors of Map.Map.actorsDb) {
+          floor++;
           for (let actor of actors) {
             let specialActor: SpecialActorsEnum | undefined;
             if (actor.isA("player")) {
@@ -539,6 +541,19 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
     this.features[ActorFeatureTypeEnum.LIGHT] = newValue;
   }
 
+  get powerBonus(): number {
+    return this.xpHolder
+      ? this.xpHolder.demonicFavorLevel + this.xpHolder.xpLevel * 2
+      : 0;
+  }
+
+  get meleePower(): number {
+    const attacker = this.getAttacker();
+    return this.powerBonus + (attacker ? attacker.power : 0);
+  }
+  get defence(): number {
+    return this.destructible.computeRealDefence(this);
+  }
   get xpHolder(): XpHolder {
     return <XpHolder>this.features[ActorFeatureTypeEnum.XP_HOLDER];
   }

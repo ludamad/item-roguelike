@@ -131,7 +131,7 @@ export class Destructible implements IActorFeature {
   public computeRealDefence(owner: Actor): number {
     let realdefence = this.defence;
     if (owner.xpHolder) {
-      realdefence += owner.xpHolder.xpLevel - 1;
+      realdefence += owner.xpHolder.xpLevel;
     }
     if (owner.container) {
       // add bonus from equipped items
@@ -332,9 +332,7 @@ export class Attacker implements IActorFeature {
    */
   public attack(owner: Actor, target: Actor) {
     if (target.destructible && !target.destructible.isDead()) {
-      const basePower = owner.xpHolder
-        ? 4 + owner.xpHolder.demonicFavorLevel + owner.xpHolder.xpLevel
-        : 0;
+      const basePower = owner.powerBonus;
       let damage = Math.max(
         0,
         this.power + basePower - target.destructible.computeRealDefence(target)
@@ -346,7 +344,7 @@ export class Attacker implements IActorFeature {
         msg += " and kill[s] [it2] !";
         logLevel = Umbra.LogLevel.WARN;
         // There is a xp gain/hp gain tax based on our level
-        const levelTax = owner.xpHolder ? (owner.xpHolder.xpLevel - 1) * 3 : 0;
+        const levelTax = 0; //owner.xpHolder ? (owner.xpHolder.xpLevel - 1) * 3 : 0;
         const xpGain = Math.max(0, target.destructible.xp - levelTax);
         if (owner.xpHolder && xpGain) {
           msg +=

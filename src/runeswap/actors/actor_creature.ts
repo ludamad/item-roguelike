@@ -847,11 +847,11 @@ export class PlayerAi extends BaseAi {
     if (!weapon || !weapon.ranged) {
       const synthetic = new Ranged({
         damageCoef: 1,
-        projectileType: "stone[s]",
+        projectileType: "time dart[s]",
         loadTime: 0,
         range: 9,
       });
-      return await synthetic.fire(owner, undefined);
+      return await synthetic.fire(owner, weapon);
       // Umbra.logger.error("You have no ranged weapon equipped.");
       // owner.scheduler.pause();
       // return false;

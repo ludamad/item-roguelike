@@ -153,20 +153,8 @@ export class StatusPanel
     //   Constants.FAVOR_BAR_BACKGROUND,
     //   Constants.FAVOR_BAR_FOREGROUND
     // );
-    this.console.print(
-      1,
-      3,
-      "Power " +
-        (player.xpHolder.demonicFavorLevel +
-          player.xpHolder.xpLevel +
-          4 +
-          player.getAttacker().power)
-    );
-    this.console.print(
-      10,
-      3,
-      "Defence " + player.destructible.computeRealDefence(player)
-    );
+    this.console.print(1, 3, "Power " + player.meleePower);
+    this.console.print(10, 3, "Defence " + player.defence);
 
     this.console.print(1, 5, getEngine().dungeonDetails.name);
     this.console.print(
@@ -231,9 +219,30 @@ export class StatusPanel
           if (i > 0) {
             this.mouseLookText += ",";
           }
-          this.mouseLookText += Map.Map.current.renderer.canIdentifyActor(actor)
-            ? actor.getDescription()
-            : "?";
+          if (actor === player) {
+            this.mouseLookText = "you";
+          } else if (!actor.destructible) {
+            this.mouseLookText += Map.Map.current.renderer.canIdentifyActor(
+              actor
+            )
+              ? actor.getDescription()
+              : "";
+          } else {
+            const damage = Math.max(actor.meleePower - player.defence, 0);
+            const numToKill = Math.ceil(
+              actor.destructible.hp /
+                Math.max(player.meleePower - actor.defence, 1)
+            );
+            this.mouseLookText += Map.Map.current.renderer.canIdentifyActor(
+              actor
+            )
+              ? actor.getDescription() +
+                " " +
+                damage +
+                " threat / " +
+                (numToKill === 1 ? "1 hit left " : numToKill + " hits left ")
+              : "?";
+          }
         }
       }
     }

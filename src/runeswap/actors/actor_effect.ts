@@ -15,6 +15,7 @@ import {
 } from "./actor_def";
 import { transformMessage } from "./base";
 import { Condition } from "./actor_condition";
+import { DEFAULT_CONSOLE_HEIGHT } from "../umbra/main";
 
 /**
  * =============================================================================
@@ -247,7 +248,7 @@ export interface IEffect {
    * Returns:
    * false if effect cannot be applied
    */
-  applyTo(actor: Actor, coef: number): EffectResult;
+  applyTo(owner: Actor, actor: Actor, coef: number): EffectResult;
 }
 
 export abstract class Effect implements IEffect {
@@ -262,7 +263,11 @@ export abstract class Effect implements IEffect {
     }
   }
 
-  public abstract applyTo(actor: Actor, coef: number): EffectResult;
+  public abstract applyTo(
+    owner: Actor,
+    actor: Actor,
+    coef: number
+  ): EffectResult;
 }
 
 /**
@@ -297,19 +302,23 @@ export class InstantHealthEffect extends Effect {
       }
     }
   }
-  public applyTo(actor: Actor, coef: number = 1.0): EffectResult {
+  public applyTo(owner: Actor, actor: Actor, coef: number = 1.0): EffectResult {
     if (!actor.destructible) {
       return EffectResult.FAILURE;
     }
     if (this._amount > 0) {
       if (this.canResurrect || !actor.destructible.isDead()) {
-        return this.applyHealingEffectTo(actor, coef);
+        return this.applyHealingEffectTo(owner, actor, coef);
       }
     }
-    return this.applyWoundingEffectTo(actor, coef);
+    return this.applyWoundingEffectTo(owner, actor, coef);
   }
 
-  private applyHealingEffectTo(actor: Actor, coef: number = 1.0): EffectResult {
+  private applyHealingEffectTo(
+    owner: Actor,
+    actor: Actor,
+    coef: number = 1.0
+  ): EffectResult {
     let healPointsCount: number = actor.destructible.heal(
       actor,
       coef * this._amount
@@ -331,6 +340,7 @@ export class InstantHealthEffect extends Effect {
   }
 
   private applyWoundingEffectTo(
+    owner: Actor,
     actor: Actor,
     damageBonus: number = 1.0
   ): EffectResult {
@@ -340,6 +350,20 @@ export class InstantHealthEffect extends Effect {
     let realdefence: number = actor.destructible.computeRealDefence(actor);
     let wearer: Actor | undefined = actor.getWearer();
     let damageDealt = -this._amount + damageBonus - realdefence;
+    if (actor.destructible.hp <= damageDealt) {
+      // TODO fix so player doesnt have to be hardcoded here
+      const xpGain = actor.destructible.xp;
+      if (xpGain) {
+        const msg =
+          "[The actor2] [is2] dead. [The actor1] absorb[s] " +
+          xpGain +
+          " life.";
+        const player = Actor.specialActors[SpecialActorsEnum.PLAYER];
+        Umbra.logger.warn(transformMessage(msg, player, actor));
+        player.destructible.heal(player, xpGain);
+        player.xpHolder.addXp(player, xpGain);
+      }
+    }
     if (damageDealt > 0 && this.successMessage) {
       Umbra.logger.info(
         transformMessage(this.successMessage, actor, wearer, damageDealt)
@@ -347,10 +371,11 @@ export class InstantHealthEffect extends Effect {
     } else if (damageDealt <= 0 && this.failureMessage) {
       Umbra.logger.info(transformMessage(this.failureMessage, actor, wearer));
     }
-    return Effect.booleanToEffectResult(
+    const result = Effect.booleanToEffectResult(
       actor.destructible.takeRawDamage(actor, damageDealt) || true,
       this._singleActor
     );
+    return result;
   }
 }
 
@@ -366,7 +391,11 @@ export class TeleportEffect extends Effect {
     this.successMessage = successMessage;
   }
 
-  public applyTo(actor: Actor, _coef: number = 1.0): EffectResult {
+  public applyTo(
+    owner: Actor,
+    actor: Actor,
+    _coef: number = 1.0
+  ): EffectResult {
     let x: number;
     let y: number;
     [x, y] = Map.Map.current.findRandomWamlkableCell();
@@ -397,7 +426,7 @@ export class EventEffect extends Effect {
     this.eventData = { ...this.eventData, ...fields };
   }
 
-  public applyTo(_actor: Actor, _coef: number = 1.0): EffectResult {
+  public applyTo(owner, _actor: Actor, _coef: number = 1.0): EffectResult {
     Umbra.EventManager.publishEvent(this.eventType, this.eventData);
     return EffectResult.SUCCESS;
   }
@@ -420,7 +449,7 @@ export class ConditionEffect extends Effect {
     }
   }
 
-  public applyTo(actor: Actor, _coef: number = 1.0): EffectResult {
+  public applyTo(owner, actor: Actor, _coef: number = 1.0): EffectResult {
     if (!actor.ai) {
       return EffectResult.FAILURE;
     }
@@ -433,7 +462,7 @@ export class ConditionEffect extends Effect {
 }
 
 export class MapRevealEffect extends Effect {
-  public applyTo(actor: Actor, _coef: number = 1.0): EffectResult {
+  public applyTo(owner, actor: Actor, _coef: number = 1.0): EffectResult {
     if (actor === Actor.specialActors[SpecialActorsEnum.PLAYER]) {
       Map.Map.current.reveal();
       return EffectResult.SUCCESS;
@@ -503,7 +532,7 @@ export class Effector {
     }
 
     for (let actor of actors) {
-      let result: EffectResult = this._effect.applyTo(actor, this._coef);
+      let result: EffectResult = this._effect.applyTo(owner, actor, this._coef);
       if (
         result === EffectResult.SUCCESS ||
         result === EffectResult.SUCCESS_AND_STOP
