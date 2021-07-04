@@ -34,6 +34,8 @@ import {
   URL_PARAM_NO_MONSTER,
   ACTOR_TYPES,
   PERSISTENCE_STORY_KEY,
+  PERSISTENCE_SCHEDULER_TIME,
+  PERSISTENCE_SCHEDULER_IDS,
 } from "./base";
 import { StatusPanel } from "./gui_status";
 import { InventoryPanel } from "./gui_inventory";
@@ -43,7 +45,7 @@ import { NumberSelector } from "./gui_input_number";
 import { MainMenu } from "./gui_menu";
 import { DebugMenu } from "./gui_debug";
 import { dungeonConfig } from "./config_dungeons";
-import { Actor, ActorId, EventEffect } from "./actors/main";
+import { Actor, ActorId, EventEffect, PLAYER_WALK_TIME } from "./actors/main";
 import {
   DungeonDetails,
   findBranch,
@@ -51,6 +53,11 @@ import {
   StoryDetails,
 } from "./story";
 import { getEngine } from "./main";
+import {
+  findNearestEmpty,
+  findNearestFreeNotNearPlayer,
+  isNearPlayer,
+} from "./map_utils";
 
 /**
  * Property: SAVEFILE_VERSION
@@ -95,6 +102,7 @@ export abstract class DungeonScene
       this.playerInventoryPicker,
       this.playerLootHandler
     );
+    player.teamId = 0;
     if (!player) {
       Umbra.logger.critical("Missing actor type " + ACTOR_TYPES.PLAYER);
       return;
@@ -106,12 +114,14 @@ export abstract class DungeonScene
     );
     player.moveTo(stairsUp.pos.x, stairsUp.pos.y);
     Actors.ActorFactory.createInContainer(player, [
-      ACTOR_TYPES.KNIFE,
-      ACTOR_TYPES.TIME_DART,
-      ACTOR_TYPES.TIME_DART,
-      ACTOR_TYPES.TIME_DART,
-      ACTOR_TYPES.TIME_DART,
-      ACTOR_TYPES.TIME_DART,
+      ACTOR_TYPES.SHORT_STAFF,
+      ACTOR_TYPES.SCROLL_OF_TELEPORTATION,
+      ACTOR_TYPES.POWER_BOLT,
+      // ACTOR_TYPES.CHARM_MONSTER,
+      // ACTOR_TYPES.SCROLL_OF_CHARM_MONSTER,
+      // ACTOR_TYPES.POWER_BOLT,
+      // ACTOR_TYPES.POWER_BOLT,
+      // ACTOR_TYPES.POWER_BOLT,
     ]);
     Actors.Actor.describeCell(player.pos);
   }
@@ -230,7 +240,11 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
             getEngine().storyConfig.demonName
           }... he grins...`
         );
-        Umbra.logger.info("You win!");
+        Umbra.logger.info(
+          "You prove yourself to " +
+            getEngine().storyConfig.demonName +
+            "! You win!"
+        );
         this.status = GameStatus.VICTORY;
       } else {
         Umbra.logger.warn(
@@ -294,11 +308,19 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
       this.deleteSavedGame();
     } else {
       persister.saveToKey(PERSISTENCE_DUNGEON_LEVEL, this.dungeonLevel);
+      persister.saveToKey(
+        PERSISTENCE_SCHEDULER_TIME,
+        Actor.scheduler.currentTime
+      );
       persister.saveToKey(PERSISTENCE_VERSION_KEY, SAVEFILE_VERSION);
       persister.saveToKey(PERSISTENCE_STORY_KEY, this.storyConfig);
       persister.saveToKey(PERSISTENCE_MAP_KEY, Map.mapDb);
       // persister.saveToKey(PERSISTENCE_TOPOLOGY_MAP, this._topologyMap);
       persister.saveToKey(PERSISTENCE_STATUS_PANEL, this.gui.status);
+      this.persister.saveToKey(
+        PERSISTENCE_SCHEDULER_IDS,
+        Actor.scheduler.entities.content.map((e) => (e as Actor).id)
+      );
       Actors.ActorFactory.save(persister);
     }
   }
@@ -317,26 +339,13 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
     if (this.status === GameStatus.DEFEAT) {
       return;
     }
+    if (this.status === GameStatus.VICTORY) {
+      return;
+    }
     let player: Actors.Actor = Actors.Actor.player;
     // if (this.status === GameStatus.NEXT_LEVEL) {
     //   this.status = GameStatus.RUNNING;
     // } else
-    if (this.queuedPortalUse) {
-      this.gotoNextLevel(this.queuedPortalUse);
-      this.queuedPortalUse = undefined;
-      this.status = GameStatus.RUNNING;
-      if (player) {
-        // the player moved. Recompute the field of view
-        this.map.setDirty();
-        this.map.computeFov(
-          player.pos.x,
-          player.pos.y,
-          1 + player.xpHolder.xpLevel
-        );
-        this.map.updateScentField(player.pos.x, player.pos.y);
-      }
-      return;
-    }
     if (player && !player.destructible.isDead()) {
       let schedulerPaused = player.scheduler.isPaused();
       if (this.status === GameStatus.NEXT_TURN) {
@@ -358,6 +367,21 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
       self.status !== GameStatus.DEFEAT
     ) {
       Umbra.EventManager.publishEvent(EVENT_CHANGE_STATUS, GameStatus.DEFEAT);
+    }
+    if (this.queuedPortalUse) {
+      this.gotoNextLevel(this.queuedPortalUse);
+      this.queuedPortalUse = undefined;
+      this.status = GameStatus.RUNNING;
+      if (player) {
+        // the player moved. Recompute the field of view
+        this.map.setDirty();
+        this.map.computeFov(
+          player.pos.x,
+          player.pos.y,
+          Math.min(4, 3 + Math.floor(player.xpHolder.xpLevel / 2 - 0.5))
+        );
+        this.map.updateScentField(player.pos.x, player.pos.y);
+      }
     }
   }
 
@@ -445,10 +469,19 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
         PERSISTENCE_STATUS_PANEL,
         this.gui.status
       );
-      Actors.Actor.resetCurrentScheduler();
-      const aiActors = Map.current.actorList.filter((a) => !!a.ai);
-      Actors.Actor.currentScheduler.addAll(aiActors);
-      Actors.Actor.currentScheduler.pause();
+      Actor.resetCurrentScheduler();
+      Actor.scheduler.currentTime = await this.persister.loadFromKey(
+        PERSISTENCE_SCHEDULER_TIME
+      );
+      const ids = await this.persister.loadFromKey(PERSISTENCE_SCHEDULER_IDS);
+      for (const actor of ids.map(Actor.fromId).filter((actor) => !!actor)) {
+        Actor.scheduler.rawAdd(actor);
+      }
+      // for (const actor of Map.current.actorList) {
+      //   if (actor.ai) {
+      //     Actor.scheduler.rawAdd(actor);
+      //   }
+      // }
     } catch (err) {
       Umbra.logger.critical("Error while loading game :" + err);
       this.onNewGame();
@@ -486,14 +519,37 @@ export class Engine extends DungeonScene implements Umbra.IEventListener {
     let portal = Actors.Actor.fromId(portalId);
     if (portal) {
       player.changeMap(portal.mapId);
-      const aiActors = Map.getActors(portal.mapId).filter((a) => !!a.ai);
-      Actors.Actor.resetCurrentScheduler();
-      Actors.Actor.currentScheduler.addAll(aiActors);
+      const aiActors = Map.getActors(portal.mapId).filter(
+        (a) => !!a.ai && a !== player
+      );
+      Actor.resetCurrentScheduler();
+      Actor.currentScheduler.addAll(aiActors);
+      Actor.currentScheduler.add(player);
       this.dungeonLevel = portal.mapId;
       Map.currentIndex = portal.mapId;
       player.moveTo(portal.pos.x, portal.pos.y);
       Umbra.logger.warn("Level..." + (this.dungeonLevel + 1));
       this.renderer.initForNewMap();
+      // Stairs safety:
+      for (const aiActor of aiActors) {
+        if (aiActor.pos.equals(player.pos)) {
+          const pos = findNearestEmpty(aiActor.pos);
+          if (pos) {
+            aiActor.moveTo(pos.x, pos.y);
+          }
+        }
+        // Make all other ai actors wait
+        aiActor.wait(PLAYER_WALK_TIME);
+      }
+      // Item overlap:
+      for (const item of Map.currentActors) {
+        if (item.pickable && item.pos.equals(player.pos)) {
+          const pos = findNearestEmpty(item.pos);
+          if (pos) {
+            item.moveTo(pos.x, pos.y);
+          }
+        }
+      }
     }
   }
 

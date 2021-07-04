@@ -4,6 +4,7 @@ import { Actor } from "./actor";
 
 // some material colors
 export const FROST_COLOR: Core.Color = 0xe0e0ff;
+export const CHARMED_COLOR: Core.Color = 0xe0ffe0;
 
 // gameplay
 export const LIGHT_NORMAL_RANGE_FACTOR = 1 / 20;
@@ -25,8 +26,15 @@ export const FROZEN_MULTIPLIER: number = 3;
 // equipment slots names
 export const SLOT_RIGHT_HAND: string = "right hand";
 export const SLOT_LEFT_HAND: string = "left hand";
+export const SLOT_BODY: string = "body";
+export const SLOT_HEAD: string = "head";
+export const SLOT_NECK: string = "neck";
+export const SLOT_LEGS: string = "legs";
+export const SLOT_BOOTS: string = "boots";
+export const SLOT_RIGHT_FINGER: string = "right finger";
+export const SLOT_LEFT_FINGER: string = "left finger";
 export const SLOT_BOTH_HANDS: string = "hands";
-export const SLOT_QUIVER: string = "quiver";
+export const SLOT_SPELL: string = "spell";
 
 // persistence local storage keys
 export const PERSISTENCE_ACTORS_KEY: string = "actors";

@@ -305,20 +305,6 @@ export class BaseAi implements IActorFeature, IContainerListener {
       this.activateActors(owner, actors);
       return true;
     }
-    // TODO remove - was confusing, especially with ortho play
-    // // check on adjacent cells
-    // actors = Actor.list.filter(
-    //   (actor: Actor) =>
-    //     ((actor.activable && !actor.pickable) ||
-    //       (actor.container &&
-    //         (!actor.pickable || actor.pickable.containerId === undefined))) &&
-    //     actor.pos.isAdjacent(owner.pos, false) &&
-    //     actor !== owner
-    // );
-    if (actors.length > 0) {
-      this.activateActors(owner, actors);
-      return true;
-    }
     return false;
   }
 
@@ -362,8 +348,10 @@ export class BaseAi implements IActorFeature, IContainerListener {
     if (owner.map.isWall(x, y)) {
       if (this.hasCondition(ConditionTypeEnum.CONFUSED)) {
         owner.wait(this._walkTime);
-      } else {
+      } else if (owner.isA(ACTOR_TYPES.PLAYER)) {
         owner.scheduler.pause();
+      } else {
+        owner.wait(this._walkTime);
       }
       return false;
     }
@@ -376,6 +364,15 @@ export class BaseAi implements IActorFeature, IContainerListener {
         !actor.destructible.isDead()
     );
     if (actors.length > 0) {
+      if (actors[0].teamId === owner.teamId) {
+        // Don't attack teammate
+        if (owner.isA(ACTOR_TYPES.PLAYER)) {
+          owner.scheduler.pause();
+        } else {
+          owner.wait(this._walkTime);
+        }
+        return false;
+      }
       if (attack) {
         // attack the first living actor found on the cell
         let attacker: Attacker = owner.getAttacker();
@@ -428,7 +425,9 @@ export class BaseAi implements IActorFeature, IContainerListener {
         const pos = actor.pos.clone();
         actor.moveTo(-1, -1);
         for (const item of actor.container.getContent(undefined)) {
-          item.pickable.drop(item, owner, undefined, findNearestEmpty(pos));
+          if (item instanceof Actor) {
+            item.pickable.drop(item, owner, undefined, findNearestEmpty(pos));
+          }
         }
         actor.destroy();
         shouldWait = true;
@@ -584,8 +583,7 @@ export class PlayerAi extends BaseAi {
   autoStairsDown(owner: Actor) {
     let pos = findNearestStairsDown(owner.pos);
     if (pos && pos.equals(owner.pos)) {
-      this.tryActivate(owner);
-      return;
+      return this.tryActivate(owner);
     }
     if (pos) {
       const nearest = adjacentPositionTowards(owner, pos);
@@ -601,8 +599,7 @@ export class PlayerAi extends BaseAi {
   autoStairsUp(owner: Actor) {
     let pos = findNearestStairsUp(owner.pos);
     if (pos && pos.equals(owner.pos)) {
-      this.tryActivate(owner);
-      return;
+      return this.tryActivate(owner);
     }
     if (pos) {
       const nearest = adjacentPositionTowards(owner, pos);
@@ -615,9 +612,13 @@ export class PlayerAi extends BaseAi {
     owner.scheduler.pause();
     return false;
   }
-  _findActorAt(pos: Core.Position) {
+  findEnemyAt(pos: Core.Position) {
     for (const actor of Map.Map.current.actorList) {
-      if (actor.pos.equals(pos)) {
+      if (
+        actor.isA(ACTOR_TYPES.CREATURE) &&
+        actor.teamId === 1 &&
+        actor.pos.equals(pos)
+      ) {
         return actor;
       }
     }
@@ -626,13 +627,40 @@ export class PlayerAi extends BaseAi {
   autoExplore(owner: Actor) {
     const enemy = findNearestEnemy(owner.pos);
     if (enemy) {
-      Umbra.logger.error(
-        transformMessage(
-          "You cannot explore, you see [a actor1].",
-          this._findActorAt(enemy)
-        )
+      const enemyActor = this.findEnemyAt(enemy) as Actor;
+      const damage = Actor.player.destructible.computeDamage(
+        Actor.player,
+        enemyActor.meleePower
       );
-      owner.map.setDirty();
+      const numToKill = Math.ceil(
+        enemyActor.destructible.hp /
+          enemyActor.destructible.computeDamage(
+            enemyActor,
+            Actor.player.meleePower
+          )
+      );
+      const minThreat = damage * (numToKill - 1);
+      const maxThreat = damage * numToKill;
+      Umbra.logger.error(
+        transformMessage("You cannot explore, you see [a actor1].", enemyActor)
+      );
+      if (minThreat <= 0) {
+        Umbra.logger.error(
+          transformMessage("Careful combat can avoid damage.", enemyActor)
+        );
+      } else {
+        const mult = 0.66 ** (owner.xpHolder.xpLevel - 1);
+        Umbra.logger.error(
+          transformMessage(
+            "Combat will cause " +
+              minThreat +
+              "+ damage and give " +
+              Math.floor((enemyActor.destructible.xp / 2) * mult) +
+              " XP.",
+            enemyActor
+          )
+        );
+      }
       owner.scheduler.pause();
       return;
     }
@@ -640,6 +668,8 @@ export class PlayerAi extends BaseAi {
     if (autopickupPos && autopickupPos.equals(owner.pos)) {
       if (this.pickupItem(owner)) {
         owner.wait(this.walkTime);
+      } else {
+        owner.scheduler.pause();
       }
       return;
     }
@@ -692,8 +722,15 @@ export class PlayerAi extends BaseAi {
   autoFight(owner: Actor) {
     const target = findNearestEnemy(owner.pos);
     if (target) {
-      // move to the target cell
-      this.moveToCell(owner, target, true);
+      const dx = owner.pos.x - target.x,
+        dy = owner.pos.y - target.y;
+      if (Math.abs(dx) + Math.abs(dy) === 2) {
+        // Wait if they are 2 away
+        owner.wait(this.walkTime);
+      } else {
+        // move to the target cell
+        this.moveToCell(owner, target, true);
+      }
       //   if (nearest) {
       //     // move to the target cell
       //     this.moveOrAttack(owner, nearest.x, nearest.y);
@@ -813,7 +850,12 @@ export class PlayerAi extends BaseAi {
         }
         break;
       case PlayerActionEnum.FIRE:
-        this.fire(owner);
+        if (await this.fire(owner)) {
+          owner.wait(this.walkTime);
+          owner.scheduler.resume();
+        } else {
+          owner.scheduler.pause();
+        }
         break;
       case PlayerActionEnum.ZAP:
         if (await this.zap(owner)) {
@@ -846,10 +888,11 @@ export class PlayerAi extends BaseAi {
     }
     if (!weapon || !weapon.ranged) {
       const synthetic = new Ranged({
-        damageCoef: 1,
-        projectileType: "time dart[s]",
+        damageBonus: 0,
+        projectileType: "spell[s]",
         loadTime: 0,
         range: 9,
+        minRange: 2,
       });
       return await synthetic.fire(owner, weapon);
       // Umbra.logger.error("You have no ranged weapon equipped.");
@@ -924,7 +967,7 @@ export class PlayerAi extends BaseAi {
     return false;
   }
 
-  private pickupItem(owner: Actor) {
+  private pickupItem(owner: Actor): boolean {
     let foundItem: boolean = false;
     let pickedItem: boolean = false;
     for (let item of Actor.list) {
@@ -946,6 +989,7 @@ export class PlayerAi extends BaseAi {
         Umbra.logger.warn("There's nothing to pick up here.");
         return false;
       }
+      return true;
     } else if (!pickedItem) {
       Umbra.logger.warn("Your inventory is full.");
       return false;
@@ -990,7 +1034,7 @@ export class XpHolder implements IActorFeature {
   private baseLevel: number;
   private newLevel: number;
   private _xp: number = 0;
-  public demonicFavorXp: number = 0;
+  public demonicFavorXp: number = 10;
   public demonicFavorLevel: number = 1;
 
   constructor(def: IXpHolderDef) {
@@ -1013,12 +1057,16 @@ export class XpHolder implements IActorFeature {
     return this.baseLevel + this._xpLevel * this.newLevel;
   }
   public addXp(owner: Actor, amount: number) {
+    // TODO hackish
+    this.addDemonicFavor(owner, amount);
     this._xp += amount;
     let nextLevelXp = this.getNextLevelXp();
     if (this._xp >= nextLevelXp) {
       this._xpLevel++;
       this._xp -= nextLevelXp;
-      owner.destructible.gainMaxHP(5);
+      owner.destructible.gainMaxHP(10);
+      this._xp += amount;
+      this.addDemonicFavor(owner, 10);
       Umbra.logger.error(
         transformMessage(
           "[The actor1's] battle skills grow stronger!" +
@@ -1027,32 +1075,57 @@ export class XpHolder implements IActorFeature {
           owner
         )
       );
+      if (this.xpLevel === 2) {
+        ActorFactory.createInContainer(Actor.player, [ACTOR_TYPES.BLINK]);
+        Umbra.logger.error(
+          transformMessage("[The actor1's] can now blink anyone away!", owner)
+        );
+      }
+      if (this.xpLevel === 5) {
+        ActorFactory.createInContainer(Actor.player, [
+          ACTOR_TYPES.GREATER_BOLT,
+        ]);
+        Umbra.logger.error(
+          transformMessage("[The actor1's] can now use powerful bolts!", owner)
+        );
+      }
+      if (this.xpLevel === 4) {
+        ActorFactory.createInContainer(Actor.player, [
+          ACTOR_TYPES.CHARM_MONSTER,
+        ]);
+        Umbra.logger.error(
+          transformMessage("[The actor1's] can now charm monsters!", owner)
+        );
+      }
     }
   }
   public addDemonicFavor(owner: Actor, amount: number) {
-    this.demonicFavorXp += amount;
+    this.demonicFavorXp = Math.min(
+      owner.destructible.maxHp,
+      amount + this.demonicFavorXp
+    );
 
-    let nextLevelXp = this.getNextDemonicLevelXp();
-    if (this.demonicFavorXp >= nextLevelXp) {
-      this.demonicFavorLevel++;
-      this.demonicFavorXp -= nextLevelXp;
-      Umbra.logger.error(
-        transformMessage(
-          `[The actor1's] is now favor level ${this.demonicFavorLevel} with ${
-            getEngine().storyConfig.demonName
-          }!`,
-          owner
-        )
-      );
-    } else {
-      Umbra.logger.error(
-        transformMessage(
-          `[The actor1] gain[s] favor with ${
-            getEngine().storyConfig.demonName
-          }!`,
-          owner
-        )
-      );
-    }
+    // let nextLevelXp = this.getNextDemonicLevelXp();
+    // if (this.demonicFavorXp >= nextLevelXp) {
+    //   this.demonicFavorLevel++;
+    //   this.demonicFavorXp -= nextLevelXp;
+    //   Umbra.logger.error(
+    //     transformMessage(
+    //       `[The actor1's] is now favor level ${this.demonicFavorLevel} with ${
+    //         getEngine().storyConfig.demonName
+    //       }!`,
+    //       owner
+    //     )
+    //   );
+    // } else {
+    //   Umbra.logger.error(
+    //     transformMessage(
+    //       `[The actor1] gain[s] favor with ${
+    //         getEngine().storyConfig.demonName
+    //       }!`,
+    //       owner
+    //     )
+    //   );
+    // }
   }
 }

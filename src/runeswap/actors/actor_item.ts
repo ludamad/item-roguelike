@@ -17,7 +17,6 @@ import {
   IMagicDef,
   IActivableDef,
   IDoorDef,
-  IInstantHealthEffectDef,
   TargetSelectionMethodEnum,
 } from "./actor_def";
 import { IActorFeature, ActorId } from "./actor_feature";
@@ -29,10 +28,14 @@ import {
   SLOT_BOTH_HANDS,
   SLOT_LEFT_HAND,
   SLOT_RIGHT_HAND,
-  SLOT_QUIVER,
+  SLOT_SPELL,
   PLAYER_WALK_TIME,
 } from "./base";
 import { findNearestEmpty } from "../map_utils";
+import { EffectTarget } from "./main";
+import { ACTOR_TYPES } from "../base";
+import { getMonEntries } from "../getMonEntries";
+import { CMWCRandom, Random } from "../yendor/rng";
 
 /**
  * =============================================================================
@@ -116,22 +119,28 @@ export class Destructible implements IActorFeature {
     if (this.isDead() || this.qualifiers === undefined) {
       return owner.getname(count);
     }
-    let coef: number = Math.floor(
+    let bonus: number = Math.floor(
       (this.qualifiers.length * this.hp) / this._maxHp
     );
-    if (coef === this.qualifiers.length) {
-      coef = this.qualifiers.length - 1;
+    if (bonus === this.qualifiers.length) {
+      bonus = this.qualifiers.length - 1;
     }
     return (
       owner.getname(count) +
-      (this.qualifiers[coef] ? ", " + this.qualifiers[coef] : "")
+      (this.qualifiers[bonus] ? ", " + this.qualifiers[bonus] : "")
     );
+  }
+  public computeDamage(owner: Actor, power: number): number {
+    const def = this.computeRealDefence(owner);
+    const pips = Math.min(100, def / 2);
+    const root = (100.0 - pips) / 100.0;
+    return Math.ceil(Math.max(0, power ** root - def / 6.0));
   }
 
   public computeRealDefence(owner: Actor): number {
     let realdefence = this.defence;
     if (owner.xpHolder) {
-      realdefence += owner.xpHolder.xpLevel;
+      realdefence += owner.xpHolder.xpLevel * 2;
     }
     if (owner.container) {
       // add bonus from equipped items
@@ -222,12 +231,14 @@ export class Destructible implements IActorFeature {
       }
     }
     for (const item of owner.container.getContent(undefined)) {
-      item.pickable.drop(
-        item,
-        owner,
-        undefined,
-        findNearestEmpty(new Core.Position(x, y))
-      );
+      if (item instanceof Actor) {
+        item.pickable.drop(
+          item,
+          owner,
+          undefined,
+          findNearestEmpty(new Core.Position(x, y))
+        );
+      }
     }
     // Move the owner back
     if (!this.corpseName) {
@@ -242,23 +253,6 @@ export class Destructible implements IActorFeature {
       owner.map.setTransparent(owner.pos.x, owner.pos.y, true);
       owner.transparent = true;
     }
-    // owner.container = undefined;
-    // owner.activable = new Activable({
-    //   onActivateEffector: {
-    //     destroyOnEffect: true,
-    //     effect: <IInstantHealthEffectDef>{
-    //       amount: 5,
-    //       successMessage: "You eat the corpse!",
-    //     },
-    //     targetSelector: {
-    //       method: TargetSelectionMethodEnum.ACTOR_ON_CELL,
-    //     },
-    //   },
-    //   type: ActivableTypeEnum.SINGLE,
-    // });
-    // if (owner.activable) {
-    //   owner.activable.deactivate(owner);
-    // }
   }
 
   private swapNameAndCorpseName(owner: Actor) {
@@ -332,10 +326,15 @@ export class Attacker implements IActorFeature {
    */
   public attack(owner: Actor, target: Actor) {
     if (target.destructible && !target.destructible.isDead()) {
+      const xpGainer = owner.xpHolder
+        ? owner
+        : owner.teamId === 0
+        ? Actor.player
+        : undefined;
       const basePower = owner.powerBonus;
       let damage = Math.max(
         0,
-        this.power + basePower - target.destructible.computeRealDefence(target)
+        target.destructible.computeDamage(target, this.power + basePower)
       );
       let msg: string = "[The actor1] attack[s] [the actor2]";
       let logLevel: Umbra.LogLevel = Umbra.LogLevel.INFO;
@@ -343,10 +342,10 @@ export class Attacker implements IActorFeature {
       if (damage >= target.destructible.hp) {
         msg += " and kill[s] [it2] !";
         logLevel = Umbra.LogLevel.WARN;
+        const mult = 0.66 ** (Actor.player.xpHolder.xpLevel - 1);
         // There is a xp gain/hp gain tax based on our level
-        const levelTax = 0; //owner.xpHolder ? (owner.xpHolder.xpLevel - 1) * 3 : 0;
-        const xpGain = Math.max(0, target.destructible.xp - levelTax);
-        if (owner.xpHolder && xpGain) {
+        const xpGain = Math.floor((target.destructible.xp / 2) * mult);
+        if (xpGainer && xpGain) {
           msg +=
             "\n[The actor2] [is2] dead. [The actor1] absorb[s] " +
             xpGain +
@@ -362,11 +361,11 @@ export class Attacker implements IActorFeature {
       }
       Umbra.logger.log(logLevel, transformMessage(msg, owner, target));
       target.destructible.takeRawDamage(target, damage);
-      if (gainedXp > 0) {
+      if (gainedXp > 0 && xpGainer) {
         if (!target.destructible.isDead()) {
           throw new Error();
         }
-        owner.xpHolder.addXp(owner, gainedXp);
+        xpGainer.xpHolder.addXp(owner, gainedXp);
       }
     }
   }
@@ -466,8 +465,8 @@ export class Container implements IActorFeature {
   public getContent(
     typeFilter: string | undefined,
     deep: boolean = false,
-    result?: Actor[]
-  ): Actor[] {
+    result?: EffectTarget[]
+  ): EffectTarget[] {
     if (result === undefined) {
       result = [];
     }
@@ -574,6 +573,7 @@ export class Container implements IActorFeature {
    * Check if there's an available slot on this container and an equivalent item is not already equipped
    */
   public shouldAutoEquip(owner: Actor, item: Actor): boolean {
+    console.log("1", item.name);
     if (
       !this._slots ||
       !item.equipment ||
@@ -582,6 +582,7 @@ export class Container implements IActorFeature {
     ) {
       return false;
     }
+    console.log("2", item.name);
     // try to find an empty compatible slot
     let itemSlots: string[] = item.equipment.getSlots();
     let isSlotAvailable = false;
@@ -597,6 +598,7 @@ export class Container implements IActorFeature {
     if (!isSlotAvailable) {
       return false;
     }
+    console.log("3", item.name);
     // find item's inventory qualifiers
     let qualifier: string | undefined = item.getInventoryQualifier();
     // check if similar item not already equipped (to avoid auto-equipping a second torch when you already use one)
@@ -604,10 +606,12 @@ export class Container implements IActorFeature {
       for (let actorId of this._slotActors) {
         let slotActor: Actor | undefined = Actor.fromId(actorId);
         if (slotActor && slotActor.isA(qualifier)) {
+          console.log(qualifier);
           return false;
         }
       }
     }
+    console.log("4", item.name);
     return true;
   }
 
@@ -717,8 +721,8 @@ export class Container implements IActorFeature {
   }
 
   private getCapacityQualifier(): string {
-    let coef: number = this.computeTotalWeight() / this._capacity;
-    return coef > 0.8 ? "almost full " : "";
+    let bonus: number = this.computeTotalWeight() / this._capacity;
+    return bonus > 0.8 ? "almost full " : "";
   }
 }
 
@@ -738,8 +742,10 @@ export class Pickable implements IActorFeature {
    */
   private onThrowEffector: Effector;
   private _weight: number;
+  public manaCost: number;
   public price: number;
   private _destroyedWhenThrown: boolean = false;
+  private _neverDropItem: boolean = false;
   private _containerId: ActorId | undefined;
 
   get weight() {
@@ -750,6 +756,9 @@ export class Pickable implements IActorFeature {
   }
   get destroyedWhenThrown() {
     return this._destroyedWhenThrown;
+  }
+  get neverDropItem() {
+    return this._neverDropItem;
   }
   get containerId() {
     return this._containerId;
@@ -768,6 +777,10 @@ export class Pickable implements IActorFeature {
       if (def.onThrowEffector) {
         this.onThrowEffector = ActorFactory.createEffector(def.onThrowEffector);
       }
+      if (def.neverDropItem) {
+        this._neverDropItem = true;
+      }
+      this.manaCost = def.manaCost;
     }
   }
 
@@ -855,6 +868,35 @@ export class Pickable implements IActorFeature {
           )
         );
       }
+      if (owner.isA(ACTOR_TYPES.ARTEFACT)) {
+        // TODO put this in a method
+        Umbra.logger.warn(
+          transformMessage("Tartarus reacts to your theft!", wearer, owner)
+        );
+
+        function createMonsters(id: number, map: Map.Map) {
+          const probabilities = getMonEntries(105, 115, id, id + 1);
+          let monsters: Actor[] = ActorFactory.createRandomActors(
+            { classProb: probabilities, minCount: 10, maxCount: 10 },
+            id
+          );
+          for (let monster of monsters) {
+            let i;
+            for (i = 0; i < 100; i++) {
+              let x = CMWCRandom.default.getNumber(0, map.w);
+              let y = CMWCRandom.default.getNumber(0, map.h);
+              if (map.canWalk(x, y)) {
+                monster.moveTo(x, y);
+                break;
+              }
+            }
+          }
+        }
+        let id = 0;
+        for (const map of Map.Map.mapDb) {
+          createMonsters(id++, map);
+        }
+      }
 
       if (!fromEquip) {
         if (
@@ -898,12 +940,19 @@ export class Pickable implements IActorFeature {
     withMessage: boolean = false,
     fromEquip?: boolean
   ) {
+    if (owner.pickable.neverDropItem) {
+      // Umbra.logger.info(
+      //   "There is no need to " + verb + " the " + owner.getthename()
+      // );
+      return;
+    }
     let container: Actor | undefined = Actor.fromId(this._containerId);
     if (container) {
       container.container.remove(owner.id, wearer);
     }
     if (!newContainer) {
       this._containerId = undefined;
+      owner.mapId = wearer.mapId;
       owner.pos.x = pos ? pos.x : wearer.pos.x;
       owner.pos.y = pos ? pos.y : wearer.pos.y;
       owner.register();
@@ -937,6 +986,8 @@ export class Pickable implements IActorFeature {
       return await this.onUseEffector.apply(owner, wearer);
     } else if (owner.equipment) {
       owner.equipment.use(owner, wearer);
+      // For now, take no time equipping items
+      return false;
     } else if (owner.activable) {
       await owner.activable.activate(owner);
     }
@@ -956,9 +1007,10 @@ export class Pickable implements IActorFeature {
     owner: Actor,
     wearer: Actor,
     fromFire: boolean,
+    minRange?: number,
     maxRange?: number,
-    damageCoef?: number
-  ): Promise<void> {
+    damageBonus?: number
+  ): Promise<boolean> {
     if (!maxRange) {
       maxRange = owner.computeThrowRange(wearer);
     }
@@ -966,30 +1018,44 @@ export class Pickable implements IActorFeature {
     // -> actor dependency which would break json serialization
     if (wearer.ai.tilePicker) {
       const pos = await wearer.ai.tilePicker.pickATile(
-        "Left-click where to throw the " +
+        "Left-click where to fire the " +
           owner.name +
           ",\nor right-click to cancel.",
         new Core.Position(wearer.pos.x, wearer.pos.y),
-        maxRange
+        minRange,
+        maxRange,
+        undefined,
+        true
       );
-      this.throwOnPos(owner, wearer, fromFire, pos, damageCoef);
+      if (!pos) {
+        return false;
+      }
+      return await this.throwOnPos(owner, wearer, fromFire, pos, damageBonus);
     }
+    return false;
   }
 
-  private throwOnPos(
+  private async throwOnPos(
     owner: Actor,
     wearer: Actor,
     fromFire: boolean,
     pos: Core.Position,
-    coef: number = 1
-  ) {
-    owner.pickable.drop(owner, wearer, undefined, pos, "throw", !fromFire);
+    bonus: number = 1
+  ): Promise<boolean> {
     if (owner.pickable.onThrowEffector) {
-      owner.pickable.onThrowEffector.apply(owner, wearer, pos, coef);
+      if (
+        !(await owner.pickable.onThrowEffector.apply(owner, wearer, pos, bonus))
+      ) {
+        return false;
+      }
+      if (!owner.pickable.neverDropItem) {
+        owner.pickable.drop(owner, wearer, undefined, pos, "throw", !fromFire);
+      }
       if (owner.pickable.destroyedWhenThrown) {
         owner.destroy();
       }
     }
+    return true;
   }
 }
 
@@ -1157,14 +1223,14 @@ export class Equipment implements IActorFeature {
  * The same arrow will deal different damages depending on the bow you use.
  * A ranged weapon can throw several type of projectiles (for example dwarven and elven arrows).
  * The projectileType property makes it possible to look for an adequate item in the inventory.
- * If a compatible type is equipped (on quiver), it will be used. Else the first compatible item will be used.
+ * If a compatible type is equipped (on spell), it will be used. Else the first compatible item will be used.
  */
 export class Ranged implements IActorFeature {
   /**
-   * Property: _damageCoef
+   * Property: _damageBonus
    * Damage multiplicator when using this weapon to fire a projectile.
    */
-  private _damageCoef: number;
+  private _damageBonus: number;
   /**
    * Property: _projectileType
    * The actor type that this weapon can fire.
@@ -1176,6 +1242,11 @@ export class Ranged implements IActorFeature {
    */
   private _loadTime: number;
   /**
+   * Property:  _minRange
+   * This weapon's minimum firing distance
+   */
+  private _minRange: number;
+  /**
    * Property:  _range
    * This weapon's maximum firing distance
    */
@@ -1186,8 +1257,8 @@ export class Ranged implements IActorFeature {
   get loadTime() {
     return this._loadTime;
   }
-  get damageCoef() {
-    return this._damageCoef;
+  get damageBonus() {
+    return this._damageBonus;
   }
   get projectileType() {
     return this._projectileType;
@@ -1195,16 +1266,20 @@ export class Ranged implements IActorFeature {
   get projectile() {
     return this.projectileId ? Actor.fromId(this.projectileId) : undefined;
   }
+  get minRange() {
+    return this._minRange;
+  }
   get range() {
     return this._range;
   }
 
   constructor(def: IRangedDef) {
     if (def) {
-      this._damageCoef = def.damageCoef;
+      this._damageBonus = def.damageBonus;
       this._projectileType = def.projectileType;
       this._loadTime = def.loadTime;
       this._range = def.range;
+      this._minRange = def.minRange || 0;
     }
   }
 
@@ -1220,27 +1295,42 @@ export class Ranged implements IActorFeature {
       }
       return false;
     } else {
+      if (projectile.pickable.manaCost > wearer.xpHolder.demonicFavorXp) {
+        // too much mana cost
+        if (wearer === Actor.specialActors[SpecialActorsEnum.PLAYER]) {
+          Umbra.logger.warn(
+            "You lack the mana to use " + projectile.getname() + "."
+          );
+        }
+        return false;
+      }
       this.projectileId = projectile.id;
       Umbra.logger.info(
         transformMessage("[The actor1] fire[s] [a actor2].", wearer, projectile)
       );
-      await projectile.pickable.throw(
+      const multiplier = projectile.isA(ACTOR_TYPES.GREATER_BOLT) ? 2 : 1;
+      const didThrow = await projectile.pickable.throw(
         projectile,
         wearer,
         true,
+        projectile.isA(ACTOR_TYPES.POWER_BOLT) ? this._minRange : 0,
         this._range,
-        // wearerweapon ? weapon.ranged.damageCoef : 1
-        wearer.xpHolder ? wearer.xpHolder.xpLevel + 4 : 0
+        multiplier *
+          (wearer.meleePower +
+            (weapon && weapon.ranged ? weapon.ranged.damageBonus : 0))
       );
-      return true;
+      if (didThrow) {
+        wearer.xpHolder.demonicFavorXp -= projectile.pickable.manaCost;
+      }
+      return didThrow;
     }
   }
 
   private findCompatibleProjectile(wearer: Actor): Actor | undefined {
     let projectile: Actor | undefined = undefined;
     if (wearer.container) {
-      // if a projectile type is selected (equipped in quiver), use it
-      projectile = wearer.container.getFromSlot(SLOT_QUIVER);
+      // if a projectile type is selected (equipped in spell), use it
+      projectile = wearer.container.getFromSlot(SLOT_SPELL);
       if (!projectile || !projectile.isA(this._projectileType)) {
         // else use the first compatible projectile
         projectile = undefined;
@@ -1398,7 +1488,9 @@ export class Activable implements IActorFeature {
       this.active = false;
     }
     if (this.onActivateEffector && activator) {
-      this.onActivateEffector.apply(owner, activator);
+      if (!this.onActivateEffector.apply(owner, activator)) {
+        return false;
+      }
     }
     return true;
   }

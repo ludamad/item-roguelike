@@ -4,7 +4,11 @@
 import * as Core from "../core/main";
 import { Actor } from "./actor";
 import { ConditionTypeEnum, IConditionDef } from "./actor_def";
-import { AFTER_STUNNED_CONFUSION_DELAY, FROST_COLOR } from "./base";
+import {
+  AFTER_STUNNED_CONFUSION_DELAY,
+  CHARMED_COLOR,
+  FROST_COLOR,
+} from "./base";
 
 /**
  * ==============================================================================
@@ -24,6 +28,8 @@ export class Condition {
     switch (def.type) {
       case ConditionTypeEnum.HEALTH_VARIATION:
         return new HealthVariationCondition(def);
+      case ConditionTypeEnum.CHARMED:
+        return new CharmedCondition(def);
       case ConditionTypeEnum.STUNNED:
         return new StunnedCondition(def);
       case ConditionTypeEnum.FROZEN:
@@ -38,6 +44,7 @@ export class Condition {
   private static condNames = [
     undefined,
     "confused",
+    "charmed",
     "stunned",
     "frozen",
     "regeneration",
@@ -173,6 +180,31 @@ export class StunnedCondition extends Condition {
       }
     }
     return true;
+  }
+}
+
+/**
+ * Class: CharmedCondition
+ * The creature is briefly on the opposite team.
+ */
+export class CharmedCondition extends Condition {
+  originalTeam: number;
+  originalColor: Core.Color;
+
+  constructor(def: IConditionDef) {
+    super(def);
+  }
+
+  public onApply(owner: Actor) {
+    this.originalTeam = owner.teamId;
+    owner.teamId = owner.teamId === 1 ? 0 : 1;
+    this.originalColor = owner.col;
+    owner.col = CHARMED_COLOR;
+  }
+
+  public onRemove(owner: Actor) {
+    owner.teamId = this.originalTeam;
+    owner.col = this.originalColor;
   }
 }
 

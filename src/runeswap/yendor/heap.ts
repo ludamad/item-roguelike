@@ -7,7 +7,7 @@
  * Adapted from http://www.openbookproject.net/books/mi2pwjs/app_b.html#binary-heaps-appendix
  */
 export class BinaryHeap<T> {
-  private content: T[] = [];
+  public content: T[] = [];
   private scoreFunction: (element: T) => number;
   constructor(scoreFunction: (element: T) => number) {
     this.scoreFunction = scoreFunction;

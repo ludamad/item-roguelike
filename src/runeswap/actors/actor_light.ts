@@ -110,9 +110,9 @@ export class Light implements IActorFeature {
         return 1 / (1 + squaredDistance);
       case LightFalloffTypeEnum.NORMAL:
         // see http://roguecentral.org/doryen/articles/lights-in-full-color-roguelikes/
-        let intensityCoef1: number =
+        let intensitybonus1: number =
           1 / (1 + squaredDistance * LIGHT_NORMAL_RANGE_FACTOR);
-        return (intensityCoef1 - this.rangeFactor1) * this.rangeFactor2;
+        return (intensitybonus1 - this.rangeFactor1) * this.rangeFactor2;
       case LightFalloffTypeEnum.NONE:
         return 1;
       default:
@@ -141,7 +141,7 @@ export class Light implements IActorFeature {
       (patternLen * this.patternTime) /
       (this._options.intensityVariationLength || 1);
     let charPos = Math.floor(patternPos);
-    let interpolateCoef = patternPos - charPos;
+    let interpolatebonus = patternPos - charPos;
     let charNextPos = (charPos + 1) % patternLen;
     // values between 0 and 9
     let value =
@@ -152,7 +152,7 @@ export class Light implements IActorFeature {
       BASE_LIGHT_PATTERN_ASCIICODE;
     // interpolate between the two values
     let interpolatedValue =
-      (1 - interpolateCoef) * value + interpolateCoef * nextValue;
+      (1 - interpolatebonus) * value + interpolatebonus * nextValue;
     return interpolatedValue / 9;
   }
 }

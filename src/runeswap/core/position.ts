@@ -31,7 +31,7 @@ export class Position implements IComparable {
   public static taxiDistance(p1: Position, p2: Position): number {
     let dx: number = p1.x - p2.x;
     let dy: number = p1.y - p2.y;
-    return Math.max(Math.abs(dx), Math.abs(dy));
+    return Math.abs(dx) + Math.abs(dy);
   }
 
   // static arrays to help scan adjacent cells

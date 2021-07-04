@@ -8,14 +8,19 @@ import { Actor, SpecialActorsEnum } from "./actor";
 import {
   TargetSelectionMethodEnum,
   ITargetSelectorDef,
-  IInstantHealthEffectDef,
   IConditionDef,
-  IConditionEffectDef,
-  IEventEffectDef,
+  InstantHealthEffectDef,
+  EventEffectDef,
+  ConditionEffectDef,
+  InstantManaEffectDef,
+  BlinkEffectDef,
 } from "./actor_def";
 import { transformMessage } from "./base";
 import { Condition } from "./actor_condition";
 import { DEFAULT_CONSOLE_HEIGHT } from "../umbra/main";
+import { ActorFactory } from "./actor_factory";
+
+export type EffectTarget = Core.Position | Actor;
 
 /**
  * =============================================================================
@@ -26,9 +31,11 @@ export interface ITilePicker {
   pickATile(
     message: string,
     origin?: Core.Position,
+    minRange?: number,
     range?: number,
-    radius?: number
-  ): Promise<Core.Position>;
+    radius?: number,
+    autotargetEnemy?: boolean
+  ): Promise<Core.Position | undefined>;
 }
 
 /**
@@ -90,20 +97,18 @@ export class TargetSelector {
    * Returns:
    * true if targets have been selected (else wait for TILE_SELECTED event, then call <onTileSelected>)
    */
-  public selectTargets(
+  public async selectTargets(
     _owner: Actor,
     wearer: Actor,
     cellPos?: Core.Position
-  ): Promise<Actor[]> {
-    let selectedTargets: Actor[] = [];
+  ): Promise<EffectTarget[]> {
     switch (this._method) {
       // synchronous cases
       case TargetSelectionMethodEnum.WEARER:
-        selectedTargets.push(wearer);
-        break;
+        return [wearer];
       case TargetSelectionMethodEnum.ACTOR_ON_CELL:
         if (cellPos) {
-          selectedTargets = Actor.list.filter(
+          return Actor.list.filter(
             (actor: Actor) =>
               actor.pos.equals(cellPos) && actor.isA("creature[s]")
           );
@@ -115,23 +120,25 @@ export class TargetSelector {
           this.range
         );
         if (actor) {
-          selectedTargets.push(actor);
+          return [actor];
         }
         break;
       case TargetSelectionMethodEnum.ACTORS_IN_RANGE:
-        selectedTargets = Actor.list.filter(
+        return Actor.list.filter(
           (actor: Actor) =>
             actor.isA("creature[s]") &&
-            Core.Position.distance(cellPos ? cellPos : wearer.pos, actor.pos) <
-              this.range
+            Core.Position.taxiDistance(
+              cellPos ? cellPos : wearer.pos,
+              actor.pos
+            ) < this.range
         );
-        break;
       // asynchronous cases
       case TargetSelectionMethodEnum.WEARER_INVENTORY:
         // check if there's only one corresponding target
         if (!wearer.container) {
           break;
         }
+        let selectedTargets = [];
         wearer.container.getContent(this.actorType, true, selectedTargets);
         if (selectedTargets.length === 1) {
           // auto-select item when there's only one corresponding.
@@ -140,79 +147,83 @@ export class TargetSelector {
           // player must select an actor from his inventory.
           selectedTargets = [];
           if (wearer.ai && wearer.ai.inventoryItemPicker) {
-            return new Promise<Actor[]>((resolve) => {
-              if (wearer.ai.inventoryItemPicker) {
-                wearer.ai.inventoryItemPicker
-                  .pickItemFromInventory(
-                    "select an item",
-                    wearer,
-                    this.actorType
-                  )
-                  .then((item: Actor) => {
-                    selectedTargets.push(item);
-                    resolve(selectedTargets);
-                  });
-              }
-            });
+            const item = await wearer.ai.inventoryItemPicker.pickItemFromInventory(
+              "select an item",
+              wearer,
+              this.actorType
+            );
+            selectedTargets.push(item);
           }
         }
         break;
       case TargetSelectionMethodEnum.SELECTED_ACTOR:
         if (wearer.ai && wearer.ai.tilePicker) {
-          return new Promise<Actor[]>((resolve) => {
-            if (wearer.ai.tilePicker) {
-              wearer.ai.tilePicker
-                .pickATile(
-                  "Left-click a target creature,\nor right-click to cancel.",
-                  new Core.Position(wearer.pos.x, wearer.pos.y),
-                  this._range,
-                  this._radius
-                )
-                .then((pos: Core.Position) => {
-                  resolve(this.onTileSelected(pos));
-                });
-            }
-          });
+          const pos = await wearer.ai.tilePicker.pickATile(
+            "Left-click a target creature,\nor right-click to cancel.",
+            new Core.Position(wearer.pos.x, wearer.pos.y),
+            0,
+            this._range,
+            this._radius
+          );
+          if (!pos) {
+            return [];
+          }
+          return this.onTileSelected(pos);
         }
         break;
       case TargetSelectionMethodEnum.SELECTED_RANGE:
         if (wearer.ai && wearer.ai.tilePicker) {
-          return new Promise<Actor[]>(async (resolve) => {
-            if (wearer.ai.tilePicker) {
-              const pos = await wearer.ai.tilePicker.pickATile(
-                "Left-click a target tile,\nor right-click to cancel.",
-                new Core.Position(wearer.pos.x, wearer.pos.y),
-                this._range,
-                this._radius
-              );
-              resolve(this.onTileSelected(pos));
-            }
-          });
+          const pos = await wearer.ai.tilePicker.pickATile(
+            "Left-click a target tile,\nor right-click to cancel.",
+            new Core.Position(wearer.pos.x, wearer.pos.y),
+            0,
+            this._range,
+            this._radius
+          );
+          if (!pos) {
+            return [];
+          }
+          return this.onTileSelected(pos);
+        }
+        break;
+      case TargetSelectionMethodEnum.SELECTED_EMPTY_TILE:
+        if (wearer.ai && wearer.ai.tilePicker) {
+          const pos = await wearer.ai.tilePicker.pickATile(
+            "Left-click a target tile,\nor right-click to cancel.",
+            new Core.Position(wearer.pos.x, wearer.pos.y),
+            0,
+            this._range,
+            this._radius
+          );
+          if (!pos) {
+            return [];
+          }
+          return this.onTileSelected(pos);
         }
         break;
       default:
         break;
     }
-    return new Promise<Actor[]>((resolve) => {
-      resolve(selectedTargets);
-    });
+    return [];
   }
 
   /**
    * Function: onTileSelected
    * Populates the __selectedTargets field for selection methods that require a tile selection
    */
-  public onTileSelected(pos: Core.Position): Actor[] {
+  public onTileSelected(pos: Core.Position): EffectTarget[] {
     switch (this._method) {
       case TargetSelectionMethodEnum.SELECTED_ACTOR:
         return Actor.list.filter(
           (actor: Actor) => actor.pos.equals(pos) && actor.isA("creature[s]")
         );
+      case TargetSelectionMethodEnum.SELECTED_EMPTY_TILE:
+        return [pos];
       case TargetSelectionMethodEnum.SELECTED_RANGE:
         return Actor.list.filter(
           (actor: Actor) =>
             actor.isA("creature[s]") &&
-            Core.Position.distance(pos, actor.pos) < this.radius
+            Core.Position.taxiDistance(pos, actor.pos) < this.radius
         );
       default:
         break;
@@ -244,11 +255,15 @@ export interface IEffect {
    * Apply an effect to an actor
    * Parameters:
    * actor - the actor this effect is applied to
-   * coef - a multiplicator to apply to the effect
+   * bonus - a multiplicator to apply to the effect
    * Returns:
    * false if effect cannot be applied
    */
-  applyTo(owner: Actor, actor: Actor, coef: number): EffectResult;
+  applyTo(
+    owner: Actor,
+    actor: Actor,
+    bonus: number
+  ): EffectResult | Promise<EffectResult>;
 }
 
 export abstract class Effect implements IEffect {
@@ -266,8 +281,8 @@ export abstract class Effect implements IEffect {
   public abstract applyTo(
     owner: Actor,
     actor: Actor,
-    coef: number
-  ): EffectResult;
+    bonus: number
+  ): EffectResult | Promise<EffectResult>;
 }
 
 /**
@@ -288,7 +303,7 @@ export class InstantHealthEffect extends Effect {
     return this._singleActor;
   }
 
-  constructor(def: IInstantHealthEffectDef) {
+  constructor(def: InstantHealthEffectDef) {
     super();
     if (def) {
       this._amount = def.amount;
@@ -302,26 +317,30 @@ export class InstantHealthEffect extends Effect {
       }
     }
   }
-  public applyTo(owner: Actor, actor: Actor, coef: number = 1.0): EffectResult {
+  public applyTo(
+    owner: Actor,
+    actor: Actor,
+    bonus: number = 1.0
+  ): EffectResult {
     if (!actor.destructible) {
       return EffectResult.FAILURE;
     }
     if (this._amount > 0) {
       if (this.canResurrect || !actor.destructible.isDead()) {
-        return this.applyHealingEffectTo(owner, actor, coef);
+        return this.applyHealingEffectTo(owner, actor, bonus);
       }
     }
-    return this.applyWoundingEffectTo(owner, actor, coef);
+    return this.applyWoundingEffectTo(owner, actor, bonus);
   }
 
   private applyHealingEffectTo(
     owner: Actor,
     actor: Actor,
-    coef: number = 1.0
+    bonus: number = 1.0
   ): EffectResult {
     let healPointsCount: number = actor.destructible.heal(
       actor,
-      coef * this._amount
+      bonus * this._amount
     );
     let wearer: Actor | undefined = actor.getWearer();
     let result: EffectResult = Effect.booleanToEffectResult(
@@ -347,18 +366,21 @@ export class InstantHealthEffect extends Effect {
     if (actor.destructible.isDead()) {
       return EffectResult.FAILURE;
     }
-    let realdefence: number = actor.destructible.computeRealDefence(actor);
     let wearer: Actor | undefined = actor.getWearer();
-    let damageDealt = -this._amount + damageBonus - realdefence;
+    let damageDealt = actor.destructible.computeDamage(
+      actor,
+      -this._amount + damageBonus
+    );
     if (actor.destructible.hp <= damageDealt) {
       // TODO fix so player doesnt have to be hardcoded here
-      const xpGain = actor.destructible.xp;
+      const player = Actor.specialActors[SpecialActorsEnum.PLAYER];
+      const mult = 0.66 ** (player.xpHolder.xpLevel - 1);
+      const xpGain = Math.floor((actor.destructible.xp / 2) * mult);
       if (xpGain) {
         const msg =
           "[The actor2] [is2] dead. [The actor1] absorb[s] " +
           xpGain +
           " life.";
-        const player = Actor.specialActors[SpecialActorsEnum.PLAYER];
         Umbra.logger.warn(transformMessage(msg, player, actor));
         player.destructible.heal(player, xpGain);
         player.xpHolder.addXp(player, xpGain);
@@ -380,6 +402,42 @@ export class InstantHealthEffect extends Effect {
 }
 
 /**
+ * Class: InstantHealthEffect
+ * Add or remove mana points.
+ */
+export class InstantManaEffect extends Effect {
+  private _amount: number = 0;
+
+  get amount() {
+    return this._amount;
+  }
+
+  constructor(def: InstantManaEffectDef) {
+    super();
+    if (def) {
+      this._amount = def.amount;
+    }
+  }
+  public applyTo(
+    owner: Actor,
+    actor: Actor,
+    bonus: number = 1.0
+  ): EffectResult {
+    // TODO robustness
+    const gain = Math.min(
+      this.amount + bonus,
+      actor.destructible.maxHp - actor.xpHolder.demonicFavorXp
+    );
+    if (!gain) {
+      Umbra.logger.info(actor.getThename() + " has max mana!");
+      return Effect.booleanToEffectResult(false, true);
+    }
+    Umbra.logger.info(actor.getThename() + " gain " + gain + " mana!");
+    actor.xpHolder.demonicFavorXp += gain;
+    return Effect.booleanToEffectResult(true, true);
+  }
+}
+/**
  * Class: TeleportEffect
  * Teleport the target at a random location.
  */
@@ -394,11 +452,78 @@ export class TeleportEffect extends Effect {
   public applyTo(
     owner: Actor,
     actor: Actor,
-    _coef: number = 1.0
+    _bonus: number = 1.0
   ): EffectResult {
     let x: number;
     let y: number;
-    [x, y] = Map.Map.current.findRandomWamlkableCell();
+    [x, y] = Map.Map.current.findRandomWalkableCell();
+    actor.moveTo(x, y);
+    if (this.successMessage) {
+      Umbra.logger.info(transformMessage(this.successMessage, actor));
+    }
+    return EffectResult.SUCCESS_AND_STOP;
+  }
+}
+
+/**
+ * Class: BlinkEffect
+ * Blink to a target location.
+ */
+export class BlinkEffect extends Effect {
+  constructor(def: BlinkEffectDef) {
+    super();
+  }
+
+  public async applyTo(
+    owner: Actor,
+    actor: Actor,
+    _bonus: number = 1.0
+  ): Promise<EffectResult> {
+    // For now, until AI targetting is needed
+    const pos = await Actor.player.ai.tilePicker.pickATile(
+      "Left-click a target tile,\nor right-click to cancel.",
+      new Core.Position(owner.pos.x, owner.pos.y),
+      0,
+      9
+    );
+    console.log({ pos });
+    if (!pos) {
+      return EffectResult.FAILURE;
+    }
+    if (actor === Actor.player) {
+      Umbra.logger.info(actor.getThename() + " blinks!");
+    } else {
+      Umbra.logger.info(actor.getThename() + " is forced to blink!");
+    }
+    actor.moveTo(pos.x, pos.y);
+    return EffectResult.SUCCESS_AND_STOP;
+  }
+}
+
+/**
+ * Class: SummonEffect
+ * Summon an ally.
+ */
+export class SummonEffect extends Effect {
+  private actorType: string;
+  private successMessage: string | undefined;
+
+  constructor(actorType: string, successMessage?: string) {
+    super();
+    this.actorType = actorType;
+    this.successMessage = successMessage;
+  }
+
+  public applyTo(
+    owner: Actor,
+    actor: Actor,
+    _bonus: number = 1.0
+  ): EffectResult {
+    let x: number;
+    let y: number;
+    [x, y] = Map.Map.current.findRandomWalkableCell();
+    // ActorFactory.create(actor.mapId);
+
     actor.moveTo(x, y);
     if (this.successMessage) {
       Umbra.logger.info(transformMessage(this.successMessage, actor));
@@ -414,7 +539,7 @@ export class TeleportEffect extends Effect {
 export class EventEffect extends Effect {
   private eventType: string;
   private eventData: any;
-  constructor(def: IEventEffectDef) {
+  constructor(def: EventEffectDef) {
     super();
     if (def) {
       this.eventType = def.eventType;
@@ -426,7 +551,7 @@ export class EventEffect extends Effect {
     this.eventData = { ...this.eventData, ...fields };
   }
 
-  public applyTo(owner, _actor: Actor, _coef: number = 1.0): EffectResult {
+  public applyTo(owner, _actor: Actor, _bonus: number = 1.0): EffectResult {
     Umbra.EventManager.publishEvent(this.eventType, this.eventData);
     return EffectResult.SUCCESS;
   }
@@ -440,7 +565,7 @@ export class ConditionEffect extends Effect {
   private conditionDef: IConditionDef;
   private message: string | undefined;
   private singleActor: boolean = false;
-  constructor(def: IConditionEffectDef, message?: string) {
+  constructor(def: ConditionEffectDef, message?: string) {
     super();
     this.message = message;
     if (def) {
@@ -449,7 +574,7 @@ export class ConditionEffect extends Effect {
     }
   }
 
-  public applyTo(owner, actor: Actor, _coef: number = 1.0): EffectResult {
+  public applyTo(owner, actor: Actor, _bonus: number = 1.0): EffectResult {
     if (!actor.ai) {
       return EffectResult.FAILURE;
     }
@@ -462,7 +587,7 @@ export class ConditionEffect extends Effect {
 }
 
 export class MapRevealEffect extends Effect {
-  public applyTo(owner, actor: Actor, _coef: number = 1.0): EffectResult {
+  public applyTo(owner, actor: Actor, _bonus: number = 1.0): EffectResult {
     if (actor === Actor.specialActors[SpecialActorsEnum.PLAYER]) {
       Map.Map.current.reveal();
       return EffectResult.SUCCESS;
@@ -479,16 +604,15 @@ export class Effector {
   private _effect: IEffect;
   private targetSelector: TargetSelector;
   private message: string | undefined;
-  private _coef: number;
+  private _bonus: number;
   private destroyOnEffect: boolean;
 
   get effect() {
     return this._effect;
   }
-  get coef() {
-    return this._coef;
+  get bonus() {
+    return this._bonus;
   }
-
   constructor(
     _effect: IEffect,
     _targetSelector: TargetSelector,
@@ -511,28 +635,40 @@ export class Effector {
     owner: Actor,
     wearer: Actor,
     cellPos?: Core.Position,
-    coef: number = 1.0
+    bonus: number = 1.0
   ): Promise<boolean> {
-    this._coef = coef;
+    this._bonus = bonus;
     this.targetSelector;
-    this._coef = coef;
+    this._bonus = bonus;
     const targets = await this.targetSelector.selectTargets(
       owner,
       wearer,
       cellPos
     );
-    this.applyEffectToActorList(owner, wearer, targets);
-    return targets.length > 0;
+    const success = await this.applyEffectToActorList(
+      owner,
+      wearer,
+      targets.filter((a) => (a as Actor).id) as Actor[]
+    );
+    return success && targets.length > 0;
   }
 
-  private applyEffectToActorList(owner: Actor, wearer: Actor, actors: Actor[]) {
+  private async applyEffectToActorList(
+    owner: Actor,
+    wearer: Actor,
+    actors: Actor[]
+  ): Promise<boolean> {
     let success: boolean = false;
     if (this.message) {
       Umbra.logger.info(transformMessage(this.message, wearer));
     }
 
     for (let actor of actors) {
-      let result: EffectResult = this._effect.applyTo(owner, actor, this._coef);
+      const result: EffectResult = await this._effect.applyTo(
+        owner,
+        actor,
+        this._bonus
+      );
       if (
         result === EffectResult.SUCCESS ||
         result === EffectResult.SUCCESS_AND_STOP
@@ -549,5 +685,6 @@ export class Effector {
     if (this.destroyOnEffect && success && wearer && wearer.container) {
       owner.destroy();
     }
+    return success;
   }
 }

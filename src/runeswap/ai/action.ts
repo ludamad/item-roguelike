@@ -6,23 +6,29 @@ import * as Yendor from "../yendor/main";
 import * as Actors from "../actors/main";
 import * as Map from "../map/main";
 import { CTX_KEY_PATH, CTX_KEY_PATH_FINDER } from "./constants";
-import { CTX_KEY_GUARD } from "../base";
+import { ACTOR_TYPES, CTX_KEY_GUARD } from "../base";
+import { findNearestHostileTo } from "../map_utils";
+import { Actor } from "../actors/main";
 
 /**
- * class: AttackPlayerActionNode
- * If the player is at melee range, attack him and return SUCCESS.
+ * class: AttackOpponentActionNode
+ * If an opponent is at melee range, attack them and return SUCCESS.
  * Else return FAILURE
  */
-export class AttackPlayerActionNode extends Yendor.AbstractActionNode {
+export class AttackOpponentActionNode extends Yendor.AbstractActionNode {
   constructor(private useDiagonals: boolean = true) {
     super();
   }
   protected tick(tick: Yendor.Tick): Yendor.TickResultEnum {
     let owner: Actors.Actor = <Actors.Actor>tick.userData;
-    let player: Actors.Actor =
-      Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
-    if (player.pos.isAdjacent(owner.pos, this.useDiagonals)) {
-      owner.ai.moveToCell(owner, player.pos, true);
+    let opponentPos = findNearestHostileTo(owner, 2);
+    let [target] = !opponentPos
+      ? []
+      : Map.Map.getActors(owner.mapId).filter(({ pos }) =>
+          pos.equals(opponentPos)
+        );
+    if (target && target.pos.isAdjacent(owner.pos, this.useDiagonals)) {
+      owner.ai.moveToCell(owner, target.pos, true);
       return Yendor.TickResultEnum.SUCCESS;
     }
     return Yendor.TickResultEnum.FAILURE;
@@ -30,12 +36,12 @@ export class AttackPlayerActionNode extends Yendor.AbstractActionNode {
 }
 
 /**
- * class: MoveToActionNode
+ * class: MoveToOpponentNode
  * If the distance to target is less than or equal to minRange, return SUCCESS.
  * Else if the target is visible or a previous path to the target was computed, follow this path and return RUNNING
  * Else return FAILURE
  */
-export class MoveToActionNode extends Yendor.AbstractActionNode {
+export class MoveToOpponentNode extends Yendor.AbstractActionNode {
   constructor(
     private targetContextKey: string,
     private minRange: number = 0,
@@ -51,21 +57,32 @@ export class MoveToActionNode extends Yendor.AbstractActionNode {
       tick.tree.id,
       this.id
     );
-    // TODO actual "in sight" computation
-    if (currentMap.isInFov(owner.pos.x, owner.pos.y)) {
-      // target is visible, go towards it
-      let target: Actors.Actor | undefined;
-      if (this.targetContextKey === CTX_KEY_GUARD) {
-        // TODO fix this hack
-        target = Actors.Actor.fromId(owner.ai.targetId);
-      } else {
-        target = tick.context.get(this.targetContextKey);
-      }
-      if (!target) {
-        throw new Error(
-          "Could not find " + this.targetContextKey + " registered!"
+    // target is visible, go towards it
+    let target: Actors.Actor | undefined;
+    if (this.targetContextKey === CTX_KEY_GUARD) {
+      // TODO fix this hack
+      target = Actors.Actor.fromId(owner.ai.targetId);
+    } else {
+      const targetPos = findNearestHostileTo(owner, 4);
+      if (targetPos) {
+        console.log(
+          Map.Map.getActors(owner.mapId).filter(
+            (obj) => obj.isA(ACTOR_TYPES.CREATURE) && obj.pos.equals(targetPos)
+          )
         );
       }
+      [target] = !targetPos
+        ? []
+        : Map.Map.getActors(owner.mapId).filter(
+            (obj) => obj.isA(ACTOR_TYPES.CREATURE) && obj.pos.equals(targetPos)
+          );
+    }
+    if (!target && owner.teamId === 1) {
+      target = Actor.player;
+    }
+
+    // TODO actual "in sight" computation
+    if (target) {
       if (
         !target.pos.isAdjacent(owner.pos, false) &&
         Core.Position.taxiDistance(target.pos, owner.pos) > this.minRange
@@ -84,7 +101,11 @@ export class MoveToActionNode extends Yendor.AbstractActionNode {
               currentMap.w,
               currentMap.h,
               function (_from: Core.Position, to: Core.Position): number {
-                return currentMap.canWalk(to.x, to.y) ? 1 : 0;
+                return currentMap.canWalk(to.x, to.y) ||
+                  to.equals(target.pos) ||
+                  _from.equals(target.pos)
+                  ? 1
+                  : 0;
               },
               undefined,
               this.allowDiagonals
@@ -105,7 +126,7 @@ export class MoveToActionNode extends Yendor.AbstractActionNode {
         }
       } else {
         // at range.
-        return Yendor.TickResultEnum.SUCCESS;
+        return Yendor.TickResultEnum.FAILURE;
       }
     } else if (path && path.length > 0) {
       // target not visible. follow last computed path (go to the target last know position)
@@ -144,7 +165,7 @@ export class TrackScentActionNode extends Yendor.AbstractActionNode {
       Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
     let dx: number = Math.abs(owner.pos.x - player.pos.x);
     let dy: number = Math.abs(owner.pos.y - player.pos.y);
-    if (dx <= 1 && dy <= 1) {
+    if (Math.abs(dx + dy) <= 1) {
       // adjacent to player
       return Yendor.TickResultEnum.SUCCESS;
     }

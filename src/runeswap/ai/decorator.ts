@@ -33,7 +33,7 @@ export class RangeCompareNode extends Yendor.TestContextNode {
     if (!target) {
       return Yendor.TickResultEnum.FAILURE;
     }
-    let distance: number = Core.Position.distance(target.pos, owner.pos);
+    let distance: number = Core.Position.taxiDistance(target.pos, owner.pos);
     let childStatus: Yendor.TickResultEnum = <Yendor.TickResultEnum>(
       tick.context.get(CTX_KEY_CHILD_STATUS, tick.tree.id, this.id)
     );

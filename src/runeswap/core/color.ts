@@ -38,11 +38,11 @@ export class ColorUtils {
    * > (r,g,b) * n == (r*n, g*n, b*n)
    * Parameters:
    * color - the color
-   * coef - the factor
+   * bonus - the factor
    * Returns:
    * A new color as a number between 0x000000 and 0xFFFFFF
    */
-  public static multiply(color: Color, coef: number): Color {
+  public static multiply(color: Color, bonus: number): Color {
     let r: number;
     let g: number;
     let b: number;
@@ -57,9 +57,9 @@ export class ColorUtils {
       g = rgb[1];
       b = rgb[2];
     }
-    r = Math.round(r * coef);
-    g = Math.round(g * coef);
-    b = Math.round(b * coef);
+    r = Math.round(r * bonus);
+    g = Math.round(g * bonus);
+    b = Math.round(b * bonus);
     r = r < 0 ? 0 : r > 255 ? 255 : r;
     g = g < 0 ? 0 : g > 255 ? 255 : g;
     b = b < 0 ? 0 : b > 255 ? 255 : b;

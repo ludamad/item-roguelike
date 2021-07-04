@@ -65,71 +65,79 @@ export const CHAR_SUBP_DIAG: number = 230;
 export const CHAR_SUBP_E: number = 231;
 export const CHAR_SUBP_SW: number = 232;
 // miscellaneous
-export const CHAR_SMILIE: number =  1;
-export const CHAR_SMILIE_INV: number =  2;
-export const CHAR_HEART: number =  3;
-export const CHAR_DIAMOND: number =  4;
-export const CHAR_CLUB: number =  5;
-export const CHAR_SPADE: number =  6;
-export const CHAR_BULLET: number =  7;
-export const CHAR_BULLET_INV: number =  8;
-export const CHAR_MALE: number =  11;
-export const CHAR_FEMALE: number =  12;
-export const CHAR_NOTE: number =  13;
-export const CHAR_NOTE_DOUBLE: number =  14;
-export const CHAR_LIGHT: number =  15;
-export const CHAR_EXCLAM_DOUBLE: number =  19;
-export const CHAR_PILCROW: number =  20;
-export const CHAR_SECTION: number =  21;
-export const CHAR_POUND: number =  156;
-export const CHAR_MULTIPLICATION: number =  158;
-export const CHAR_FUNCTION: number =  159;
-export const CHAR_RESERVED: number =  169;
-export const CHAR_HALF: number =  171;
-export const CHAR_ONE_QUARTER: number =  172;
-export const CHAR_COPYRIGHT: number =  184;
-export const CHAR_CENT: number =  189;
-export const CHAR_YEN: number =  190;
-export const CHAR_CURRENCY: number =  207;
-export const CHAR_THREE_QUARTERS: number =  243;
-export const CHAR_DIVISION: number =  246;
-export const CHAR_GRADE: number =  248;
-export const CHAR_UMLAUT: number =  249;
-export const CHAR_POW1: number =  251;
-export const CHAR_POW3: number =  252;
-export const CHAR_POW2: number =  253;
-export const CHAR_BULLET_SQUARE: number =  254;
+export const CHAR_SMILIE: number = 1;
+export const CHAR_SMILIE_INV: number = 2;
+export const CHAR_HEART: number = 3;
+export const CHAR_DIAMOND: number = 4;
+export const CHAR_CLUB: number = 5;
+export const CHAR_SPADE: number = 6;
+export const CHAR_BULLET: number = 7;
+export const CHAR_BULLET_INV: number = 8;
+export const CHAR_MALE: number = 11;
+export const CHAR_FEMALE: number = 12;
+export const CHAR_NOTE: number = 13;
+export const CHAR_NOTE_DOUBLE: number = 14;
+export const CHAR_LIGHT: number = 15;
+export const CHAR_EXCLAM_DOUBLE: number = 19;
+export const CHAR_PILCROW: number = 20;
+export const CHAR_SECTION: number = 21;
+export const CHAR_POUND: number = 156;
+export const CHAR_MULTIPLICATION: number = 158;
+export const CHAR_FUNCTION: number = 159;
+export const CHAR_RESERVED: number = 169;
+export const CHAR_HALF: number = 171;
+export const CHAR_ONE_QUARTER: number = 172;
+export const CHAR_COPYRIGHT: number = 184;
+export const CHAR_CENT: number = 189;
+export const CHAR_YEN: number = 190;
+export const CHAR_CURRENCY: number = 207;
+export const CHAR_THREE_QUARTERS: number = 243;
+export const CHAR_DIVISION: number = 246;
+export const CHAR_GRADE: number = 248;
+export const CHAR_UMLAUT: number = 249;
+export const CHAR_POW1: number = 251;
+export const CHAR_POW3: number = 252;
+export const CHAR_POW2: number = 253;
+export const CHAR_BULLET_SQUARE: number = 254;
 
 export interface IConsoleRenderer {
-    init(con: Console): void;
-    /**
-     * Function: render
-     * To be implemented by non offscreen consoles extending this class.
-     */
-    render(con: Console): void;
+  init(con: Console): void;
+  /**
+   * Function: render
+   * To be implemented by non offscreen consoles extending this class.
+   */
+  render(con: Console): void;
 
-    /**
-     * Function: getPositionFromPixels
-     * Returns the column and row corresponding to a mouse position in the page.
-     * Parameters:
-     * x - the mouse x coordinate in pixels relative to the document
-     * y - the mouse y coordinate in pixels relative to the document
-     * pos - if not undefined, when function exits, contains the mouse cell position
-     * Returns:
-     * The <Core.Position> in the console.
-     */
-    getPositionFromPixels(x: number, y: number, pos?: Core.Position): Core.Position;
-    /**
-     * Function: getPixelPositionFromCell
-     * Returns the pixel position of the top left corner of a console cell.
-     * Parameters:
-     * x - the cell x coordinate
-     * y - the cell y coordinate
-     * pos - if not undefined, when function exits, contains the pixel position
-     * Returns:
-     * The <Core.Position> of the top left corner in pixels relative to the document.
-     */
-    getPixelPositionFromCell(x: number, y: number, pos?: Core.Position): Core.Position;
+  /**
+   * Function: getPositionFromPixels
+   * Returns the column and row corresponding to a mouse position in the page.
+   * Parameters:
+   * x - the mouse x coordinate in pixels relative to the document
+   * y - the mouse y coordinate in pixels relative to the document
+   * pos - if not undefined, when function exits, contains the mouse cell position
+   * Returns:
+   * The <Core.Position> in the console.
+   */
+  getPositionFromPixels(
+    x: number,
+    y: number,
+    pos?: Core.Position
+  ): Core.Position;
+  /**
+   * Function: getPixelPositionFromCell
+   * Returns the pixel position of the top left corner of a console cell.
+   * Parameters:
+   * x - the cell x coordinate
+   * y - the cell y coordinate
+   * pos - if not undefined, when function exits, contains the pixel position
+   * Returns:
+   * The <Core.Position> of the top left corner in pixels relative to the document.
+   */
+  getPixelPositionFromCell(
+    x: number,
+    y: number,
+    pos?: Core.Position
+  ): Core.Position;
 }
 
 /**
@@ -137,263 +145,318 @@ export interface IConsoleRenderer {
  * An offscreen console that can be blit on other consoles or rendered on screen if a renderer is provided.
  */
 export class Console {
-    /**
-     * Property: text
-     * Matrix of <number> storing the ascii code. The character at coordinate x,y is text[x][y].
-     */
-    public text: number[][];
+  /**
+   * Property: text
+   * Matrix of <number> storing the ascii code. The character at coordinate x,y is text[x][y].
+   */
+  public text: number[][];
 
-    /**
-     * Property: fore
-     * Matrix of <Core.Color> storing the foreground color (characters color).
-     * The character color at coordinate x,y is fore[x][y].
-     */
-    public fore: Core.Color[][];
+  /**
+   * Property: fore
+   * Matrix of <Core.Color> storing the foreground color (characters color).
+   * The character color at coordinate x,y is fore[x][y].
+   */
+  public fore: Core.Color[][];
 
-    /**
-     * Property: back
-     * Matrix of <Core.Color> storing the background color.
-     * The background color at coordinate x,y is back[x][y].
-     */
-    public back: Core.Color[][];
+  /**
+   * Property: back
+   * Matrix of <Core.Color> storing the background color.
+   * The background color at coordinate x,y is back[x][y].
+   */
+  public back: Core.Color[][];
 
-    protected _width: number;
-    protected _height: number;
+  protected _width: number;
+  protected _height: number;
 
-    /**
-     * Constructor: constructor
-     * Parameters:
-     * width - the number of columns
-     * height - the number of rows
-     * foreground - *optional* (default : white) default foreground color
-     * background - *optional* (default : black) default background color
-     */
-    constructor(_width: number, _height: number,
-                foreground: Core.Color = 0xFFFFFF, background: Core.Color = 0x000000,
-                private renderer?: IConsoleRenderer) {
-        this._width = _width;
-        this._height = _height;
-        this.text = this.newTable();
-        this.fore = this.newTable();
-        this.back = this.newTable();
-        this.clearText();
-        this.clearFore(foreground);
-        this.clearBack(background);
-        if (this.renderer) {
-            this.renderer.init(this);
-        }
+  /**
+   * Constructor: constructor
+   * Parameters:
+   * width - the number of columns
+   * height - the number of rows
+   * foreground - *optional* (default : white) default foreground color
+   * background - *optional* (default : black) default background color
+   */
+  constructor(
+    _width: number,
+    _height: number,
+    foreground: Core.Color = 0xffffff,
+    background: Core.Color = 0x000000,
+    private renderer?: IConsoleRenderer
+  ) {
+    this._width = _width;
+    this._height = _height;
+    this.text = this.newTable();
+    this.fore = this.newTable();
+    this.back = this.newTable();
+    this.clearText();
+    this.clearFore(foreground);
+    this.clearBack(background);
+    if (this.renderer) {
+      this.renderer.init(this);
     }
+  }
 
-    /**
-     * Property: height
-     * The number of rows (read-only)
-     */
-    get height(): number { return this._height; }
+  /**
+   * Property: height
+   * The number of rows (read-only)
+   */
+  get height(): number {
+    return this._height;
+  }
 
-    /**
-     * Property: width
-     * The number of columns (read-only)
-     */
-    get width(): number { return this._width; }
+  /**
+   * Property: width
+   * The number of columns (read-only)
+   */
+  get width(): number {
+    return this._width;
+  }
 
-    /**
-     * Function: contains
-     * Check if a position is inside the console
-     */
-    public contains(pos: Core.Position): boolean {
-        return pos.x >= 0 && pos.y >= 0 && pos.x < this._width && pos.y < this._height;
-    }
+  /**
+   * Function: contains
+   * Check if a position is inside the console
+   */
+  public contains(pos: Core.Position): boolean {
+    return (
+      pos.x >= 0 && pos.y >= 0 && pos.x < this._width && pos.y < this._height
+    );
+  }
 
-    /**
-     * Function: render
-     * To be implemented by non offscreen consoles extending this class.
-     */
-    public render() {
-        if ( this.renderer ) {
-            this.renderer.render(this);
-        }
+  /**
+   * Function: render
+   * To be implemented by non offscreen consoles extending this class.
+   */
+  public render() {
+    if (this.renderer) {
+      this.renderer.render(this);
     }
+  }
 
-    /**
-     * Function: getPositionFromPixels
-     * Returns the column and row corresponding to a mouse position in the page.
-     * Parameters:
-     * x - the mouse x coordinate in pixels relative to the document
-     * y - the mouse y coordinate in pixels relative to the document
-     * pos - if not undefined, when function exits, contains the mouse cell position
-     * Returns:
-     * The <Core.Position> in the console.
-     */
-    public getPositionFromPixels(x: number, y: number, pos?: Core.Position): Core.Position|undefined {
-        return this.renderer ? this.renderer.getPositionFromPixels(x, y, pos) : undefined;
+  /**
+   * Function: getPositionFromPixels
+   * Returns the column and row corresponding to a mouse position in the page.
+   * Parameters:
+   * x - the mouse x coordinate in pixels relative to the document
+   * y - the mouse y coordinate in pixels relative to the document
+   * pos - if not undefined, when function exits, contains the mouse cell position
+   * Returns:
+   * The <Core.Position> in the console.
+   */
+  public getPositionFromPixels(
+    x: number,
+    y: number,
+    pos?: Core.Position
+  ): Core.Position | undefined {
+    return this.renderer
+      ? this.renderer.getPositionFromPixels(x, y, pos)
+      : undefined;
+  }
+  /**
+   * Function: getPixelPositionFromCell
+   * Returns the pixel position of the top left corner of a console cell.
+   * Parameters:
+   * x - the cell x coordinate
+   * y - the cell y coordinate
+   * pos - if not undefined, when function exits, contains the pixel position
+   * Returns:
+   * The <Core.Position> of the top left corner in pixels relative to the document.
+   */
+  public getPixelPositionFromCell(
+    x: number,
+    y: number,
+    pos?: Core.Position
+  ): Core.Position | undefined {
+    return this.renderer
+      ? this.renderer.getPixelPositionFromCell(x, y, pos)
+      : undefined;
+  }
+  /**
+   * Function: print
+   * Print a string on the console. If the string starts before the first column
+   *  (x < 0) or ends after the last rows, it"s truncated.
+   * Parameters:
+   * x - the column of the string"s first character
+   * y - the row
+   * text - the string to print
+   * color - *optional* (default white)
+   */
+  public print(
+    x: number,
+    y: number,
+    text: string,
+    color: Core.Color = 0xffffff
+  ) {
+    if (!text || x === undefined || y === undefined) {
+      return;
     }
-    /**
-     * Function: getPixelPositionFromCell
-     * Returns the pixel position of the top left corner of a console cell.
-     * Parameters:
-     * x - the cell x coordinate
-     * y - the cell y coordinate
-     * pos - if not undefined, when function exits, contains the pixel position
-     * Returns:
-     * The <Core.Position> of the top left corner in pixels relative to the document.
-     */
-    public getPixelPositionFromCell(x: number, y: number, pos?: Core.Position): Core.Position|undefined {
-        return this.renderer ? this.renderer.getPixelPositionFromCell(x, y, pos) : undefined;
+    let begin = 0;
+    let end = text.length;
+    if (x + end > this.width) {
+      end = this.width - x;
     }
-    /**
-     * Function: print
-     * Print a string on the console. If the string starts before the first column
-     *  (x < 0) or ends after the last rows, it"s truncated.
-     * Parameters:
-     * x - the column of the string"s first character
-     * y - the row
-     * text - the string to print
-     * color - *optional* (default white)
-     */
-    public print(x: number, y: number, text: string, color: Core.Color = 0xFFFFFF) {
-        if (! text || x === undefined || y === undefined) {
-            return;
-        }
-        let begin = 0;
-        let end = text.length;
-        if (x + end > this.width) {
-            end = this.width - x;
-        }
-        if (x < 0) {
-            end += x;
-            begin = -x;
-            x = 0;
-        }
-        this.clearFore(color, x, y, end, 1);
-        for (let i = begin; i < end; ++i) {
-            this.text[i + x][y] = text.charCodeAt(i);
-        }
+    if (x < 0) {
+      end += x;
+      begin = -x;
+      x = 0;
     }
+    this.clearFore(color, x, y, end, 1);
+    for (let i = begin; i < end; ++i) {
+      this.text[i + x][y] = text.charCodeAt(i);
+    }
+  }
 
-    /**
-     * Function: clearText
-     * Fill the text on the console (don't change foreground/background colors)
-     * Parameters:
-     * asciiCode - ascii code to use to fill
-     * x - *optional* (default 0) top left column
-     * y - *optional* (default 0) top left row
-     * width - *optional* the rectangle width
-     * height - *optional* the rectangle height
-     */
-    public clearText(asciiCode: number = 0, x: number = 0, y: number = 0,
-                     width: number = -1, height: number = -1) {
-        this.clearTable(this.text, asciiCode, x, y, width, height);
-    }
+  /**
+   * Function: clearText
+   * Fill the text on the console (don't change foreground/background colors)
+   * Parameters:
+   * asciiCode - ascii code to use to fill
+   * x - *optional* (default 0) top left column
+   * y - *optional* (default 0) top left row
+   * width - *optional* the rectangle width
+   * height - *optional* the rectangle height
+   */
+  public clearText(
+    asciiCode: number = 0,
+    x: number = 0,
+    y: number = 0,
+    width: number = -1,
+    height: number = -1
+  ) {
+    this.clearTable(this.text, asciiCode, x, y, width, height);
+  }
 
-    /**
-     * Function: clearFore
-     * Change all the foreground colors of a rectangular zone.
-     * If width and height are undefined, fills the area to the border of the console.
-     * Using
-     * > console.clearFore("red");
-     * fills the whole console foreground with red.
-     * Parameters:
-     * color - new foreground color
-     * x - *optional* (default 0) top left column
-     * y - *optional* (default 0) top left row
-     * width - *optional* the rectangle width
-     * height - *optional* the rectangle height
-     */
-    public clearFore(color: Core.Color, x: number = 0, y: number = 0,
-                     width: number = -1, height: number = -1) {
-        this.clearTable(this.fore, color, x, y, width, height);
-    }
+  /**
+   * Function: clearFore
+   * Change all the foreground colors of a rectangular zone.
+   * If width and height are undefined, fills the area to the border of the console.
+   * Using
+   * > console.clearFore("red");
+   * fills the whole console foreground with red.
+   * Parameters:
+   * color - new foreground color
+   * x - *optional* (default 0) top left column
+   * y - *optional* (default 0) top left row
+   * width - *optional* the rectangle width
+   * height - *optional* the rectangle height
+   */
+  public clearFore(
+    color: Core.Color,
+    x: number = 0,
+    y: number = 0,
+    width: number = -1,
+    height: number = -1
+  ) {
+    this.clearTable(this.fore, color, x, y, width, height);
+  }
 
-    /**
-     * Function: clearBack
-     * Change all the background colors of a rectangular zone.
-     * If width and height are undefined, fills the area to the border of the console.
-     * Using
-     * > console.clearBack("red");
-     * fills the whole console background with red.
-     * Parameters:
-     * color - new background color
-     * x - *optional* (default 0) top left column
-     * y - *optional* (default 0) top left row
-     * width - *optional* the rectangle width
-     * height - *optional* the rectangle height
-     */
-    public clearBack(color: Core.Color, x: number = 0, y: number = 0,
-                     width: number = -1, height: number = -1) {
-        this.clearTable(this.back, color, x, y, width, height);
-    }
+  /**
+   * Function: clearBack
+   * Change all the background colors of a rectangular zone.
+   * If width and height are undefined, fills the area to the border of the console.
+   * Using
+   * > console.clearBack("red");
+   * fills the whole console background with red.
+   * Parameters:
+   * color - new background color
+   * x - *optional* (default 0) top left column
+   * y - *optional* (default 0) top left row
+   * width - *optional* the rectangle width
+   * height - *optional* the rectangle height
+   */
+  public clearBack(
+    color: Core.Color,
+    x: number = 0,
+    y: number = 0,
+    width: number = -1,
+    height: number = -1
+  ) {
+    this.clearTable(this.back, color, x, y, width, height);
+  }
 
-    /**
-     * Function: blit
-     * Copy a part of a console on another console.
-     * Parameters:
-     * console - the destination console
-     * x - *optional* (default 0) column where to blit on the destination console
-     * y - *optional* (default 0) row where to blit on the destination console
-     * xSrc - *optional* (default 0) top left column of the area to copy on the source console
-     * ySrc - *optional* (default 0) top left row of the area to copy on the source console
-     * srcWidth - *optional* width of the area to copy
-     * srcHeight - *optional* height of the area to copy
-     */
-    public blit(console: Console, x: number = 0, y: number = 0, xSrc: number = 0, ySrc: number = 0,
-                srcWidth: number = -1, srcHeight: number = -1) {
-        if (srcWidth === -1) {
-            srcWidth = this.width;
-        }
-        if (srcHeight === -1) {
-            srcHeight = this.height;
-        }
-        if (x + srcWidth > console.width) {
-            srcWidth = console.width - x;
-        }
-        if (y + srcHeight > console.height) {
-            srcHeight = console.height - y;
-        }
-        for (let desty = y; desty < y + srcHeight; ++desty) {
-            for (let destx = x; destx < x + srcWidth; ++destx) {
-                let sourcex = xSrc + destx - x;
-                let sourcey = ySrc + desty - y;
-                console.text[destx][desty] = this.text[sourcex][sourcey];
-                console.back[destx][desty] = this.back[sourcex][sourcey];
-                console.fore[destx][desty] = this.fore[sourcex][sourcey];
-            }
-        }
+  /**
+   * Function: blit
+   * Copy a part of a console on another console.
+   * Parameters:
+   * console - the destination console
+   * x - *optional* (default 0) column where to blit on the destination console
+   * y - *optional* (default 0) row where to blit on the destination console
+   * xSrc - *optional* (default 0) top left column of the area to copy on the source console
+   * ySrc - *optional* (default 0) top left row of the area to copy on the source console
+   * srcWidth - *optional* width of the area to copy
+   * srcHeight - *optional* height of the area to copy
+   */
+  public blit(
+    console: Console,
+    x: number = 0,
+    y: number = 0,
+    xSrc: number = 0,
+    ySrc: number = 0,
+    srcWidth: number = -1,
+    srcHeight: number = -1
+  ) {
+    if (srcWidth === -1) {
+      srcWidth = this.width;
     }
+    if (srcHeight === -1) {
+      srcHeight = this.height;
+    }
+    if (x + srcWidth > console.width) {
+      srcWidth = console.width - x;
+    }
+    if (y + srcHeight > console.height) {
+      srcHeight = console.height - y;
+    }
+    for (let desty = y; desty < y + srcHeight; ++desty) {
+      for (let destx = x; destx < x + srcWidth; ++destx) {
+        let sourcex = xSrc + destx - x;
+        let sourcey = ySrc + desty - y;
+        console.text[destx][desty] = this.text[sourcex][sourcey];
+        console.back[destx][desty] = this.back[sourcex][sourcey];
+        console.fore[destx][desty] = this.fore[sourcex][sourcey];
+      }
+    }
+  }
 
-    private clearTable<T>(table: T[][], value: T, x: number = 0, y: number = 0,
-                          width: number = -1, height: number = -1) {
-        if (width === -1) {
-            width = this.width - x;
-        }
-        if (height === -1) {
-            height = this.height - y;
-        }
-        if ( x < 0 ) {
-            width += x;
-            x = 0;
-        }
-        if ( y < 0 ) {
-            height += y;
-            y = 0;
-        }
-        width = Math.min(this._width - x, width);
-        height = Math.min(this._height - y, height);
-        for (let cx = x; cx < x + width; ++cx) {
-            if ( table[cx] === undefined ) {
-                console.log("ERROR: column " + cx + " does not exist");
-            } else {
-                for (let cy = y; cy < y + height; ++cy) {
-                    table[cx][cy] = value;
-                }
-            }
-        }
+  private clearTable<T>(
+    table: T[][],
+    value: T,
+    x: number = 0,
+    y: number = 0,
+    width: number = -1,
+    height: number = -1
+  ) {
+    if (width === -1) {
+      width = this.width - x;
     }
+    if (height === -1) {
+      height = this.height - y;
+    }
+    if (x < 0) {
+      width += x;
+      x = 0;
+    }
+    if (y < 0) {
+      height += y;
+      y = 0;
+    }
+    width = Math.min(this._width - x, width);
+    height = Math.min(this._height - y, height);
+    for (let cx = x; cx < x + width; ++cx) {
+      if (table[cx] === undefined) {
+        console.log("ERROR: column " + cx + " does not exist");
+      } else {
+        for (let cy = y; cy < y + height; ++cy) {
+          table[cx][cy] = value;
+        }
+      }
+    }
+  }
 
-    private newTable(): any[][] {
-        let table: any[] = [];
-        for (let i = 0; i < this.width; ++i) {
-            table[i] = [];
-        }
-        return table;
+  private newTable(): any[][] {
+    let table: any[] = [];
+    for (let i = 0; i < this.width; ++i) {
+      table[i] = [];
     }
+    return table;
+  }
 }

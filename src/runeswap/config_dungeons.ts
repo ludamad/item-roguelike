@@ -3,8 +3,30 @@ import * as Actors from "./actors/main";
 import * as Constants from "./base";
 import { IBspDungeonConfig } from "./map/map_build_dungeon_bsp";
 import { ACTOR_TYPES } from "./base";
-import { IActorProbability } from "./actors/main";
+import { getMonEntries } from "./getMonEntries";
+// concat(
+//   ...[
+//     ACTOR_TYPES.HELMET,
+//     ACTOR_TYPES.BOOTS,
+//     ACTOR_TYPES.ARMOUR,
+//     ACTOR_TYPES.PANTS,
+//     ACTOR_TYPES.SHIELD,
+//   ].map((proto) => [
 
+function getArmourLoot(proto: string) {
+  return [
+    {
+      clazz: `wooden ${proto}`,
+      prob: [
+        [0, 4],
+        [4, 0],
+      ],
+    },
+    { clazz: `iron ${proto}`, prob: [[1, 2]] },
+    { clazz: `great${proto}`, prob: [[2, 1]] },
+    { clazz: `power${proto}`, prob: [[3, 1]] },
+  ];
+}
 let lootProbabilities: Actors.IProbabilityMap = {
   classProb: [
     // {
@@ -19,30 +41,44 @@ let lootProbabilities: Actors.IProbabilityMap = {
     { clazz: ACTOR_TYPES.SCROLL_OF_CONFUSION, prob: 16 },
     // { clazz: ACTOR_TYPES.SHORT_BOW, prob: 1 },
     // { clazz: ACTOR_TYPES.LONG_BOW, prob: [[5, 1]] },
-    {
-      clazz: ACTOR_TYPES.SHORT_SWORD,
-      prob: [
-        [0, 4],
-        [4, 0],
-      ],
-    },
+    // {
+    //   clazz: ACTOR_TYPES.SHORT_STAFF,
+    //   prob: [
+    //     [0, 4],
+    //     [4, 0],
+    //   ],
+    // },
     // { clazz: ACTOR_TYPES.WAND_OF_FROST, prob: 1 },
     { clazz: ACTOR_TYPES.SCROLL_OF_TELEPORTATION, prob: 4 },
     { clazz: ACTOR_TYPES.SCROLL_OF_LIFE_DETECTION, prob: 4 },
+    { clazz: ACTOR_TYPES.SCROLL_OF_CHARM_MONSTER, prob: 1 },
     // { clazz: ACTOR_TYPES.SCROLL_OF_MAPPING, prob: 1 },
     {
-      clazz: ACTOR_TYPES.WOODEN_SHIELD,
+      clazz: ACTOR_TYPES.LONGSTAFF,
       prob: [
-        [0, 4],
-        [4, 0],
+        [1, 2],
+        [2, 0],
       ],
     },
-    { clazz: ACTOR_TYPES.LONGSWORD, prob: [[1, 2]] },
-    { clazz: ACTOR_TYPES.GREATSWORD, prob: [[2, 1]] },
-    { clazz: ACTOR_TYPES.POWERSWORD, prob: [[4, 1]] },
-    { clazz: ACTOR_TYPES.IRON_SHIELD, prob: [[1, 2]] },
-    { clazz: ACTOR_TYPES.GREATSHIELD, prob: [[2, 1]] },
-    { clazz: ACTOR_TYPES.POWERSHIELD, prob: [[4, 1]] },
+    {
+      clazz: ACTOR_TYPES.GREATSTAFF,
+      prob: [
+        [2, 1],
+        [3, 0],
+      ],
+    },
+    {
+      clazz: ACTOR_TYPES.POWERSTAFF,
+      prob: [
+        [3, 1],
+        [4, 2],
+      ],
+    },
+    ...getArmourLoot(ACTOR_TYPES.HELMET),
+    ...getArmourLoot(ACTOR_TYPES.BOOTS),
+    ...getArmourLoot(ACTOR_TYPES.ARMOUR),
+    ...getArmourLoot(ACTOR_TYPES.PANTS),
+    ...getArmourLoot(ACTOR_TYPES.SHIELD),
   ],
   maxCount: 4,
   minCount: 1,
@@ -51,8 +87,8 @@ let lootProbabilities: Actors.IProbabilityMap = {
 let itemProbabilities: Actors.IProbabilityMap = {
   classProb: [
     ...lootProbabilities.classProb,
-    { clazz: ACTOR_TYPES.TIME_DART, prob: 5 },
-    { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 100 },
+    // { clazz: ACTOR_TYPES.POWER_BOLT, prob: 100 },
+    // { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 100 },
     {
       clazz: ACTOR_TYPES.HEALTH_POTION,
       prob: [
@@ -64,51 +100,36 @@ let itemProbabilities: Actors.IProbabilityMap = {
       clazz: ACTOR_TYPES.GREATER_HEALTH_POTION,
       prob: [[4, 15]],
     },
+    {
+      clazz: ACTOR_TYPES.MANA_POTION,
+      prob: [
+        [0, 20],
+        [4, 15],
+      ],
+    },
+    {
+      clazz: ACTOR_TYPES.GREATER_MANA_POTION,
+      prob: [[4, 15]],
+    },
   ],
   countProb: {
-    0: 50,
-    1: 40,
-    2: 10,
+    0: 2050,
+    1: 400,
+    2: 100,
   },
 };
 
-function getMonEntries(
-  xpLow: number,
-  xpHigh: number,
-  levelLow: number,
-  levelHigh: number
-): IActorProbability[] {
-  const entries: IActorProbability[] = [];
-  for (const [clazz, v] of Object.entries(Actors.ActorFactory.actorDefs)) {
-    if (
-      v.destructible &&
-      v.destructible.xp &&
-      v.destructible.xp >= xpLow &&
-      v.destructible.xp <= xpHigh
-    ) {
-      entries.push({
-        clazz,
-        prob: [
-          [levelLow, 30],
-          [levelHigh, 5],
-        ],
-      });
-    }
-  }
-  return entries;
-}
-
 let creatureProbabilities: Actors.IProbabilityMap = {
   classProb: [
-    ...getMonEntries(0, 10, 0, 2),
-    ...getMonEntries(10, 20, 1, 3),
-    ...getMonEntries(20, 30, 2, 4),
-    ...getMonEntries(40, 50, 3, 5),
-    ...getMonEntries(50, 60, 4, 6),
-    ...getMonEntries(70, 80, 5, 7),
-    ...getMonEntries(80, 90, 6, 8),
-    ...getMonEntries(90, 100, 7, 9),
-    ...getMonEntries(100, 110, 8, 10),
+    ...getMonEntries(10, 15, 0, 1),
+    ...getMonEntries(25, 35, 1, 2),
+    ...getMonEntries(45, 55, 2, 3),
+    ...getMonEntries(65, 75, 3, 4),
+    ...getMonEntries(85, 95, 4, 5),
+    ...getMonEntries(105, 115, 5, 6),
+    // ...getMonEntries(80, 100, 6, 7),
+    // ...getMonEntries(90, 120, 7, 8),
+    // ...getMonEntries(100, 130, 8, 9),
     // { clazz: "hobgoblin[s]", prob: 30 },
     // { clazz: "jackal[s]", prob: 30 },
     // { clazz: "rat[s]", prob: 30 },

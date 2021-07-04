@@ -139,7 +139,7 @@ export class DungeonRendererNode extends MapRendererNode {
       actor.ai &&
       actor.destructible &&
       !actor.destructible.isDead() &&
-      Core.Position.distance(player.pos, actor.pos) < detectRange
+      Core.Position.taxiDistance(player.pos, actor.pos) < detectRange
     ) {
       return ActorRenderModeEnum.DETECTED;
     }
@@ -234,7 +234,7 @@ export class DungeonRendererNode extends MapRendererNode {
     Map.current.computeFov(
       player.pos.x,
       player.pos.y,
-      1 + player.xpHolder.xpLevel
+      Math.min(4, 3 + Math.floor(player.xpHolder.xpLevel / 2 - 0.5))
     );
   }
 
@@ -244,7 +244,7 @@ export class DungeonRendererNode extends MapRendererNode {
     Map.current.computeFov(
       player.pos.x,
       player.pos.y,
-      1 + player.xpHolder.xpLevel
+      Math.min(4, 3 + Math.floor(player.xpHolder.xpLevel / 2 - 0.5))
     );
     this.shader.prepareFrame();
     this.renderMap(con);
@@ -274,7 +274,7 @@ export class DungeonRendererNode extends MapRendererNode {
     Map.current.computeFov(
       player.pos.x,
       player.pos.y,
-      1 + player.xpHolder.xpLevel
+      Math.min(4, 3 + Math.floor(player.xpHolder.xpLevel / 2 - 0.5))
     );
   }
 

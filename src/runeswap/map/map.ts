@@ -96,7 +96,7 @@ export class Map extends Core.Rect implements Yendor.IPersistent {
     return true;
   }
 
-  public findRandomWamlkableCell(): [number, number] {
+  public findRandomWalkableCell(): [number, number] {
     let rng = Yendor.CMWCRandom.default;
     let x: number = rng.getNumber(0, this.w - 1);
     let y: number = rng.getNumber(0, this.h - 1);

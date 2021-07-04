@@ -7,7 +7,7 @@ import * as Umbra from "../umbra/main";
 import * as Map from "../map/main";
 import { IActorDef, ConditionTypeEnum } from "./actor_def";
 import { IActorFeature, ActorId, ActorFeatureTypeEnum } from "./actor_feature";
-import { EVENT_LIGHT_ONOFF, SLOT_QUIVER, PERSISTENCE_ACTORS_KEY } from "./base";
+import { EVENT_LIGHT_ONOFF, SLOT_SPELL, PERSISTENCE_ACTORS_KEY } from "./base";
 import {
   Destructible,
   Attacker,
@@ -141,7 +141,7 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
         actor.isA("creature[s]") &&
         !actor.destructible.isDead()
       ) {
-        let distance: number = Core.Position.distance(pos, actor.pos);
+        let distance: number = Core.Position.taxiDistance(pos, actor.pos);
         if (
           distance < bestDistance &&
           (range === undefined || distance < range || range === 0)
@@ -198,6 +198,7 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
   public name: string;
   public pluralName: string;
   public mapId: number;
+  public teamId: number = 1;
   /** the color associated with this actor's symbol */
   public col: Core.Color;
   /** whether you can walk on the tile where this actor is */
@@ -267,9 +268,9 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
    */
   public postLoad() {
     Actor.idMap[this._id] = this;
-    if (this.ai) {
-      Actor.getScheduler(this.mapId).rawAdd(this);
-    }
+    // if (this.ai) {
+    //   Actor.getScheduler(this.mapId).rawAdd(this);
+    // }
     if (this.light && (!this.activable || this.activable.isActive())) {
       Umbra.EventManager.publishEvent(EVENT_LIGHT_ONOFF, this);
     }
@@ -400,7 +401,7 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
   public computeThrowRange(_thrower: Actor): number {
     let weight: number = this.pickable.weight;
     let maxRange: number = weight < 0.5 ? 3 : 15 / weight;
-    if (this.equipment && this.equipment.canUseSlot(SLOT_QUIVER)) {
+    if (this.equipment && this.equipment.canUseSlot(SLOT_SPELL)) {
       // increase projectile throw range
       maxRange *= 2.5;
     }
@@ -444,7 +445,7 @@ export class Actor extends Yendor.TimedEntity implements Yendor.IPersistent {
       !this.destructible &&
       (!this.equipment ||
         !this.equipment.isEquipped() ||
-        this.equipment.canUseSlot(SLOT_QUIVER))
+        this.equipment.canUseSlot(SLOT_SPELL))
     );
   }
 

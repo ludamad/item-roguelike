@@ -344,6 +344,7 @@ export class AbstractDungeonBuilder {
       this.creatureProbabilities,
       this.mapId
     );
+
     for (let monster of monsters) {
       let i;
       for (i = 0; i < 100; i++) {
@@ -502,7 +503,10 @@ export class AbstractDungeonBuilder {
       getEngine().storyConfig.dungeon,
       this.mapId
     ).concat(branchItems(getEngine().storyConfig.dungeon, this.mapId))) {
-      const actor = Actors.ActorFactory.create(this.mapId, actorType) as Actors.Actor;
+      const actor = Actors.ActorFactory.create(
+        this.mapId,
+        actorType
+      ) as Actors.Actor;
       for (let i = 0; i < 100; i++) {
         const x = this.rng.getNumber(0, Map.mapDb[this.mapId].w);
         const y = this.rng.getNumber(0, Map.mapDb[this.mapId].h);

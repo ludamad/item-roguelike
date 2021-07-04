@@ -73,13 +73,23 @@ function isVisibleHostile({ x, y }: Core.Position): boolean {
       Map.current.isInFov(actor.pos.x, actor.pos.y) &&
       actor.pos.x === x &&
       actor.pos.y === y &&
-      actor.isA(ACTOR_TYPES.HOSTILE_HUMANOID) &&
+      actor.isA(ACTOR_TYPES.CREATURE) &&
+      actor.teamId === 1 &&
       !actor.destructible.isDead()
     ) {
       return true;
     }
   }
   return false;
+}
+export function isNearPlayer({ x, y }: Core.Position): boolean {
+  const dx = Actor.player.pos.x - x,
+    dy = Actor.player.pos.y - y;
+  return Math.abs(dx) + Math.abs(dy) <= 1;
+}
+function isEmptyAndNotNearPlayer(pos: Core.Position): boolean {
+  console.log(isEmpty(pos) && !isNearPlayer(pos));
+  return isEmpty(pos) && !isNearPlayer(pos);
 }
 function isNearUnexplored(pos: Core.Position): boolean {
   const isActorOrFree = !Map.current.isWall(pos.x, pos.y) && !isBlocked(pos);
@@ -124,12 +134,14 @@ function hasAutopickupItem({ x, y }: Core.Position): boolean {
         continue;
       }
       const isAutopickup = (actor: Actor) => {
-        return (
-          actor.isA(ACTOR_TYPES.KEY) ||
-          actor.isA(ACTOR_TYPES.POTION) ||
-          actor.isA(ACTOR_TYPES.GOLD_PIECE) ||
-          actor.isA(ACTOR_TYPES.SCROLL)
-        );
+        return !!actor.pickable;
+        // return (
+        //   actor.isA(ACTOR_TYPES.KEY) ||
+        //   actor.isA(ACTOR_TYPES.POTION) ||
+        //   actor.isA(ACTOR_TYPES.GOLD_PIECE) ||
+        //   actor.isA(ACTOR_TYPES.SCROLL) ||
+        //   actor.isA(ACTOR_TYPES.THROWN)
+        // );
       };
       if (
         isAutopickup(actor) ||
@@ -204,9 +216,45 @@ export function findNearestEnemy(seed: Core.Position) {
   return findNearestWalkable(seed, isVisibleHostile);
 }
 
+export function findNearestFreeNotNearPlayer(seed: Core.Position) {
+  return findNearestWalkable(seed, isEmptyAndNotNearPlayer);
+}
+
+export function findNearestHostileTo(seedActor: Actor, nMaxDistance: number) {
+  return findNearestWalkable(
+    seedActor.pos,
+    ({ x, y }) => {
+      for (const actor of Actor.list) {
+        if (seedActor === Actor.player) {
+          if (!Map.current.isInFov(actor.pos.x, actor.pos.y)) {
+            return false;
+          }
+        }
+        if (actor === Actor.player) {
+          if (!Map.current.isInFov(seedActor.pos.x, seedActor.pos.y)) {
+            return false;
+          }
+        }
+        if (
+          actor.pos.x === x &&
+          actor.pos.y === y &&
+          actor.isA(ACTOR_TYPES.CREATURE) &&
+          actor.teamId !== seedActor.teamId &&
+          !actor.destructible.isDead()
+        ) {
+          return true;
+        }
+      }
+      return false;
+    },
+    nMaxDistance
+  );
+}
+
 function findNearestWalkable(
   seed: Core.Position,
-  condition: MapCondition
+  condition: MapCondition,
+  nMaxDistance = 1000
 ): Core.Position | undefined {
   let cellsToVisit: Core.Position[] = [];
   if (condition(seed)) {
@@ -220,9 +268,14 @@ function findNearestWalkable(
     if (pos && condition(pos)) {
       return pos;
     }
+    if (Core.Position.taxiDistance(pos, seed) > nMaxDistance) {
+      continue;
+    }
     if (
       !pos ||
-      (!Map.current.canWalk(pos.x, pos.y) && !hasOpenableDoor(pos)) ||
+      (!pos.equals(seed) &&
+        !Map.current.canWalk(pos.x, pos.y) &&
+        !hasOpenableDoor(pos)) ||
       visited[pos.toString()]
     ) {
       continue;

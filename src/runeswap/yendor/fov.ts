@@ -190,6 +190,8 @@ export class Fov {
             }
           }
         }
+        const taxiDistance = Math.abs(xPov - x) + Math.abs(yPov - y);
+        visible = visible && taxiDistance <= maxRadius;
         if (visible) {
           inFov[x][y] = true;
           done = false;
@@ -305,6 +307,8 @@ export class Fov {
             }
           }
         }
+        const taxiDistance = Math.abs(xPov - x) + Math.abs(yPov - y);
+        visible = visible && taxiDistance <= maxRadius;
         if (visible) {
           inFov[x][y] = true;
           done = false;

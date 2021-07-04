@@ -41,11 +41,11 @@ export abstract class TimedEntity {
  * (for example when a creature dies and shouldn't be updated anymore).
  */
 export class Scheduler {
-  private entities: BinaryHeap<TimedEntity>;
+  public entities: BinaryHeap<TimedEntity>;
   private paused: boolean = true;
   /** entity being currently updated */
   private currentEntity: TimedEntity | undefined;
-  private currentTime: number = 0;
+  public currentTime: number = 0;
 
   constructor() {
     this.entities = new BinaryHeap<TimedEntity>((entity: TimedEntity) => {
@@ -58,9 +58,9 @@ export class Scheduler {
    */
   public add(entity: TimedEntity) {
     if (!this.entities.contains(entity)) {
-      this.entities.push(entity);
       // Ensure level playing field
       entity.wait(this.currentTime - entity.getNextActionTime());
+      this.entities.push(entity);
     }
   }
   public rawAdd(entity: TimedEntity) {
@@ -152,7 +152,7 @@ export class Scheduler {
       nextEntity &&
       nextEntity.getNextActionTime() <= this.currentTime
     ) {
-      this.currentEntity = this.entities.pop()!;
+      this.currentEntity = this.entities.pop();
       let oldTime = this.currentEntity.getNextActionTime();
       await this.currentEntity.update();
       if (this.paused && pausingEntity === undefined) {

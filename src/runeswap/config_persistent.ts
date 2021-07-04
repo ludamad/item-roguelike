@@ -10,6 +10,7 @@ export function registerPersistentClasses() {
   Yendor.Persistence.registerClass(Actors.DetectLifeCondition);
   Yendor.Persistence.registerClass(Actors.FrozenCondition);
   Yendor.Persistence.registerClass(Actors.StunnedCondition);
+  Yendor.Persistence.registerClass(Actors.CharmedCondition);
   Yendor.Persistence.registerClass(Actors.TargetSelector);
   Yendor.Persistence.registerClass(Actors.Effector);
   Yendor.Persistence.registerClass(Actors.Actor);
@@ -22,8 +23,10 @@ export function registerPersistentClasses() {
   Yendor.Persistence.registerClass(Map.Connector);
   Yendor.Persistence.registerClass(Actors.ConditionEffect);
   Yendor.Persistence.registerClass(Actors.InstantHealthEffect);
+  Yendor.Persistence.registerClass(Actors.InstantManaEffect);
   Yendor.Persistence.registerClass(Actors.MapRevealEffect);
   Yendor.Persistence.registerClass(Actors.TeleportEffect);
+  Yendor.Persistence.registerClass(Actors.BlinkEffect);
   Yendor.Persistence.registerClass(Actors.Destructible);
   Yendor.Persistence.registerClass(Actors.Attacker);
   Yendor.Persistence.registerClass(Actors.Activable);
@@ -41,8 +44,8 @@ export function registerPersistentClasses() {
   Yendor.Persistence.registerClass(Actors.MonsterAi);
   Yendor.Persistence.registerClass(Actors.PlayerAi);
   Yendor.Persistence.registerClass(Actors.Light);
-  Yendor.Persistence.registerClass(Ai.MoveToActionNode);
+  Yendor.Persistence.registerClass(Ai.MoveToOpponentNode);
   Yendor.Persistence.registerClass(Ai.TrackScentActionNode);
   Yendor.Persistence.registerClass(Ai.WaitActionNode);
-  Yendor.Persistence.registerClass(Ai.AttackPlayerActionNode);
+  Yendor.Persistence.registerClass(Ai.AttackOpponentActionNode);
 }

@@ -9,6 +9,7 @@ import * as Actors from "./actors/main";
 import * as Map from "./map/main";
 import * as Constants from "./base";
 import { getEngine } from "./main";
+import { findNearestEnemy } from "./map_utils";
 
 /**
  * =============================================================================
@@ -32,7 +33,7 @@ export class Message {
   public darkenColor() {
     this._color = Core.ColorUtils.multiply(
       this._color,
-      Constants.LOG_DARKEN_COEF
+      Constants.LOG_DARKEN_bonus
     );
   }
 }
@@ -48,7 +49,7 @@ export class StatusPanel
   public init(width: number, height: number) {
     super.init(width, height);
     this.moveToBottomLeft();
-    this.messageHeight = height - 1;
+    this.messageHeight = height - 2;
     Umbra.EventManager.registerEventListener(this, Umbra.EVENT_LOG);
   }
 
@@ -98,6 +99,7 @@ export class StatusPanel
       return;
     }
     let mousePos: Core.Position = Umbra.getMouseCellPosition();
+    let didHandleMouseLook = false;
     if (
       Map.Map.current.contains(mousePos.x, mousePos.y) &&
       Map.Map.current.isExplored(mousePos.x, mousePos.y)
@@ -105,7 +107,23 @@ export class StatusPanel
       let actorsOnCell: Actors.Actor[] = Actors.Actor.list.filter(
         (actor: Actors.Actor) => actor.pos.equals(mousePos)
       );
+      if (actorsOnCell.length > 0) {
+        didHandleMouseLook = true;
+      }
       this.handleMouseLook(actorsOnCell, mousePos);
+    }
+    if (!didHandleMouseLook && Actors.Actor.player) {
+      mousePos = findNearestEnemy(Actors.Actor.player.pos);
+      if (mousePos) {
+        let actorsOnCell: Actors.Actor[] = Actors.Actor.list.filter(
+          (actor: Actors.Actor) =>
+            actor.pos.equals(mousePos) &&
+            actor.isA(Constants.ACTOR_TYPES.CREATURE)
+        );
+        this.handleMouseLook(actorsOnCell, mousePos);
+      } else {
+        this.mouseLookText = "";
+      }
     }
   }
 
@@ -119,9 +137,10 @@ export class StatusPanel
     this.console.clearText();
     this.console.print(0, 0, this.mouseLookText);
     const hpIsGood = player.destructible.hp * 2 >= player.destructible.maxHp;
+    let row = 1;
     this.renderBar(
       1,
-      1,
+      row++,
       Constants.STAT_BAR_WIDTH,
       "Health ",
       player.destructible.hp,
@@ -135,7 +154,17 @@ export class StatusPanel
     );
     this.renderBar(
       1,
-      2,
+      row++,
+      Constants.STAT_BAR_WIDTH,
+      "Mana ",
+      player.xpHolder.demonicFavorXp,
+      player.destructible.maxHp,
+      Constants.FAVOR_BAR_FOREGROUND,
+      Constants.FAVOR_BAR_BACKGROUND
+    );
+    this.renderBar(
+      1,
+      row++,
       Constants.STAT_BAR_WIDTH,
       "Level " + player.xpHolder.xpLevel + ": ",
       player.xpHolder.xp,
@@ -143,28 +172,51 @@ export class StatusPanel
       Constants.XP_BAR_BACKGROUND,
       Constants.XP_BAR_FOREGROUND
     );
-    // this.renderBar(
-    //   1,
-    //   3,
-    //   Constants.STAT_BAR_WIDTH,
-    //   "Favor " + player.xpHolder.demonicFavorLevel + ": ",
-    //   player.xpHolder.demonicFavorXp,
-    //   player.xpHolder.getNextDemonicLevelXp(),
-    //   Constants.FAVOR_BAR_BACKGROUND,
-    //   Constants.FAVOR_BAR_FOREGROUND
-    // );
-    this.console.print(1, 3, "Power " + player.meleePower);
-    this.console.print(10, 3, "Defence " + player.defence);
+    this.console.print(1, row, "Power " + player.meleePower);
+    this.console.print(10, row, "Defence " + player.defence);
 
-    this.console.print(1, 5, getEngine().dungeonDetails.name);
-    this.console.print(
-      1,
-      6,
-      "Capacity " +
-        player.container.computeTotalWeight().toFixed(1) +
-        "/" +
-        player.container.capacity
-    );
+    row++;
+    this.console.print(1, row++, getEngine().dungeonDetails.name);
+    row++;
+    let x = 0;
+    this.console.print(1 + x, row, "tab", Constants.BONE_COLOR);
+    x += "tab ".length;
+    this.console.print(1 + x, row, "autofight");
+    x += "autofight   ".length;
+    this.console.print(1 + x, row, "o", Constants.BONE_COLOR);
+    x += "o ".length;
+    this.console.print(1 + x, row, "autoexplore");
+    x += "autoexplore   ".length;
+    this.console.print(1 + x, row, "i", Constants.BONE_COLOR);
+    x += "i ".length;
+    this.console.print(1 + x, row, "inventory");
+    x += "inventory   ".length;
+    this.console.print(1 + x, row, "f", Constants.BONE_COLOR);
+    x += "f ".length;
+    this.console.print(1 + x, row, "cast spell");
+    x += "cast spell   ".length;
+    this.console.print(1 + x, row, "g", Constants.BONE_COLOR);
+    x += "g ".length;
+    this.console.print(1 + x, row, "interact");
+    x += "interact   ".length;
+    // this.console.print(1 + x, row, "arrows", Constants.BONE_COLOR);
+    // x += "arrows ".length;
+    // this.console.print(1 + x, row, "move");
+    // x += "move   ".length;
+    row++;
+    // this.console.print(
+    //   1,
+    //   row++,
+    //   "tab autofight   o autoexplore   i inventory   f cast spell"
+    // );
+    // this.console.print(
+    //   1,
+    //   row++,
+    //   "Capacity " +
+    //     player.container.computeTotalWeight().toFixed(1) +
+    //     "/" +
+    //     player.container.capacity
+    // );
     this.renderConditions(player.ai.conditions);
     this.renderMessages();
     super.onRender(destination);
@@ -228,10 +280,13 @@ export class StatusPanel
               ? actor.getDescription()
               : "";
           } else {
-            const damage = Math.max(actor.meleePower - player.defence, 0);
+            const damage = player.destructible.computeDamage(
+              player,
+              actor.meleePower
+            );
             const numToKill = Math.ceil(
               actor.destructible.hp /
-                Math.max(player.meleePower - actor.defence, 1)
+                actor.destructible.computeDamage(actor, player.meleePower)
             );
             this.mouseLookText += Map.Map.current.renderer.canIdentifyActor(
               actor

@@ -51,37 +51,46 @@ export interface IPickableDef {
   weight: number;
   price: number;
   destroyedWhenThrown?: boolean;
+  neverDropItem?: boolean;
+  manaCost?: number;
   onUseEffector?: IEffectorDef;
   onThrowEffector?: IEffectorDef;
 }
 
+export type EffectDef =
+  | SummonActorEffectDef
+  | InstantHealthEffectDef
+  | InstantManaEffectDef
+  | EventEffectDef
+  | TeleportEffectDef
+  | BlinkEffectDef
+  | ConditionEffectDef
+  | MapRevealEffectDef;
+
 export interface IEffectorDef {
-  effect: IEffectDef;
+  effect: EffectDef;
   targetSelector: ITargetSelectorDef;
   message?: string;
   destroyOnEffect: boolean;
 }
 
-export enum EffectTypeEnum {
-  INSTANT_HEALTH = 1, // => InstantHealthEffectDef
-  TELEPORT, // => TeleportEffectDef
-  CONDITION, // => ConditionEffectDef
-  MAP_REVEAL, // => no data
-  EVENT, // => EventEffectDef
+export interface ConditionEffectDef {
+  type: "condition";
+  condition: IConditionDef;
+  successMessage: string;
 }
 
-export interface IEffectDef {
-  type: EffectTypeEnum;
-  /** effect can only affect one actor (arrow) or several (explosion) */
-  singleActor?: boolean;
+export interface MapRevealEffectDef {
+  type: "reveal";
 }
 
-export interface IEventEffectDef extends IEffectDef {
-  eventType: string;
-  eventData: any;
+export interface SummonActorEffectDef {
+  type: "summon";
+  actorType: string;
 }
 
-export interface IInstantHealthEffectDef extends IEffectDef {
+export interface InstantHealthEffectDef {
+  type: "health";
   amount: number;
   /** does this effect also work on deads (defult : false) */
   canResurrect?: boolean;
@@ -89,10 +98,30 @@ export interface IInstantHealthEffectDef extends IEffectDef {
   successMessage?: string;
   /** message if effect failed. actor1 = this actor. actor2 = the wearer */
   failureMessage?: string;
+  /** effect can only affect one actor (arrow) or several (explosion) */
+  singleActor?: boolean;
 }
 
-export interface ITeleportEffectDef extends IEffectDef {
+export interface InstantManaEffectDef {
+  type: "mana";
+  amount: number;
+}
+
+export interface EventEffectDef {
+  type: "event";
+  eventType: string;
+  eventData: any;
+}
+
+export interface TeleportEffectDef {
+  type: "teleport";
   successMessage: string;
+  /** effect can only affect one actor (arrow) or several (explosion) */
+  singleActor?: boolean;
+}
+
+export interface BlinkEffectDef {
+  type: "blink";
 }
 
 /**
@@ -139,6 +168,7 @@ export interface IDoorDef extends IActivableDef {
 
 export const enum ConditionTypeEnum {
   CONFUSED = 1,
+  CHARMED, // Briefly on the opposite team
   STUNNED,
   FROZEN,
   HEALTH_VARIATION,
@@ -162,9 +192,11 @@ export interface IConditionDef {
   name?: string;
 }
 
-export interface IConditionEffectDef extends IEffectDef {
+export interface ConditionEffectDef {
+  type: "condition";
   condition: IConditionDef;
   successMessage: string;
+  singleActor?: boolean;
 }
 
 /**
@@ -186,6 +218,7 @@ export const enum TargetSelectionMethodEnum {
   SELECTED_ACTOR,
   ACTORS_IN_RANGE,
   SELECTED_RANGE,
+  SELECTED_EMPTY_TILE,
 }
 
 export interface ITargetSelectorDef {
@@ -283,10 +316,11 @@ export interface IEquipmentDef {
 }
 
 export interface IRangedDef {
-  damageCoef: number;
+  damageBonus: number;
   projectileType: string;
   loadTime: number;
   range: number;
+  minRange?: number;
 }
 
 export interface IMagicDef {

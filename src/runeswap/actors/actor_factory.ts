@@ -9,17 +9,12 @@ import {
   IActorDef,
   IDoorDef,
   IEffectorDef,
-  IEventEffectDef,
-  IEffectDef,
   ActivableTypeEnum,
   ITargetSelectorDef,
-  EffectTypeEnum,
-  IConditionEffectDef,
-  IInstantHealthEffectDef,
-  ITeleportEffectDef,
   IConditionDef,
   AiTypeEnum,
   IAiDef,
+  EffectDef,
 } from "./actor_def";
 import {
   Destructible,
@@ -53,9 +48,12 @@ import {
   TeleportEffect,
   EventEffect,
   IEffect,
+  InstantManaEffect,
+  BlinkEffect,
 } from "./actor_effect";
 import { Condition } from "./actor_condition";
 import { PERSISTENCE_ACTORS_SEQ_KEY } from "./base";
+import { Map } from "../map/map";
 
 /**
  * =============================================================================
@@ -147,7 +145,7 @@ export class ActorFactory {
         clazz = ActorFactory.getRandomActorClass(clazz);
       }
       let actor: Actor | undefined = ActorFactory.create(mapId, clazz);
-      if (actor) {
+      if (actor && Map.currentIndex === mapId) {
         actor.register();
       }
       return actor;
@@ -434,25 +432,25 @@ export class ActorFactory {
     return new TargetSelector(def);
   }
 
-  private static createEffect(def: IEffectDef): IEffect {
+  private static createEffect(def: EffectDef): IEffect {
     switch (def.type) {
-      case EffectTypeEnum.CONDITION:
-        let conditionData: IConditionEffectDef = <IConditionEffectDef>def;
-        return new ConditionEffect(conditionData, conditionData.successMessage);
-      case EffectTypeEnum.INSTANT_HEALTH:
-        let instantHealthData: IInstantHealthEffectDef = <
-          IInstantHealthEffectDef
-        >def;
-        return new InstantHealthEffect(instantHealthData);
-      case EffectTypeEnum.MAP_REVEAL:
+      case "condition":
+        return new ConditionEffect(def, def.successMessage);
+      case "health":
+        return new InstantHealthEffect(def);
+      case "mana":
+        return new InstantManaEffect(def);
+      case "reveal":
         return new MapRevealEffect();
-      case EffectTypeEnum.TELEPORT:
-        let teleportData: ITeleportEffectDef = <ITeleportEffectDef>def;
-        return new TeleportEffect(teleportData.successMessage);
-      case EffectTypeEnum.EVENT:
+      case "teleport":
+        return new TeleportEffect(def.successMessage);
+      case "blink":
+        return new BlinkEffect(def);
+      // case "summon":
+      //   return new SummonEffect(def.actorType);
+      case "event":
       default:
-        let eventData: IEventEffectDef = <IEventEffectDef>def;
-        return new EventEffect(eventData);
+        return new EventEffect(def);
     }
   }
 

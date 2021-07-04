@@ -5,20 +5,14 @@ import * as Actors from "./actors/main";
 import * as Yendor from "./yendor/main";
 import * as Ai from "./ai/main";
 import {
-  GameStatus,
   BONE_COLOR,
-  CANDLE_LIGHT_COLOR,
   DARK_WOOD_COLOR,
-  EVENT_CHANGE_STATUS,
   GOLD_COLOR,
   HEALTH_POTION_COLOR,
   IRON_COLOR,
-  NOLIGHT_COLOR,
-  OIL_FLASK_COLOR,
   PAPER_COLOR,
   STEEL_COLOR,
   SUNROD_LIGHT_COLOR,
-  TORCH_LIGHT_COLOR,
   WOOD_COLOR,
   XP_BASE_LEVEL,
   XP_NEW_LEVEL,
@@ -28,15 +22,10 @@ import {
   CTX_KEY_GUARD,
   ACTOR_TYPES,
   EVENT_USE_PORTAL,
+  MANA_POTION_COLOR,
 } from "./base";
 import { registerPersistentClasses } from "./config_persistent";
-import {
-  IConditionEffectDef,
-  IEventEffectDef,
-  IInstantHealthEffectDef,
-  ITeleportEffectDef,
-  PLAYER_WALK_TIME,
-} from "./actors/main";
+import { EffectDef, PLAYER_WALK_TIME } from "./actors/main";
 import { registerHostileDefs } from "./hostile";
 
 // persistent classes must be registered before actors
@@ -56,11 +45,11 @@ Actors.ActorFactory.registerBehaviorTree(
     new Yendor.SequenceNode([
       new Yendor.SelectorNode([
         // We do not allow diagonal movement in our game:
-        new Ai.MoveToActionNode(Ai.CTX_KEY_PLAYER, /*min range*/ 0, false),
+        new Ai.MoveToOpponentNode(Ai.CTX_KEY_PLAYER, /*min range*/ 0, false),
         new Ai.TrackScentActionNode(SCENT_THRESHOLD),
         new Yendor.InverterNode(new Ai.WaitActionNode()),
       ]),
-      new Ai.AttackPlayerActionNode(/*no diagonals*/ false),
+      new Ai.AttackOpponentActionNode(/*no diagonals*/ false),
     ])
   )
 );
@@ -73,7 +62,7 @@ Actors.ActorFactory.registerBehaviorTree(
         CTX_KEY_GUARD,
         MAX_GUARD_RANGE,
         Yendor.NodeOperatorEnum.GREATER,
-        new Ai.MoveToActionNode(CTX_KEY_GUARD, MIN_GUARD_RANGE, false)
+        new Ai.MoveToOpponentNode(CTX_KEY_GUARD, MIN_GUARD_RANGE, false)
       ),
       new Yendor.RunTreeNode(
         Actors.ActorFactory.getBehaviorTree(BEHAVIOR_TREES.BASIC_HOSTILE)
@@ -102,7 +91,7 @@ Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.HUMANOID,
   abstract: true,
   container: {
-    capacity: 20,
+    capacity: 200,
     slots: [
       Actors.SLOT_LEFT_HAND,
       Actors.SLOT_RIGHT_HAND,
@@ -124,83 +113,21 @@ Actors.ActorFactory.registerActorDef({
   prototypes: [ACTOR_TYPES.HUMANOID],
 });
 
-// Actors.ActorFactory.registerActorDef({
-//   name: ACTOR_TYPES.GOBLIN,
-//   ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: PLAYER_WALK_TIME },
-//   attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 1 },
-//   ch: "g",
-//   color: 0x3f7f3f,
-//   destructible: {
-//     corpseName: "goblin corpse",
-//     defence: 0,
-//     healthPoints: 3,
-//     loot: {
-//       classProb: [
-//         { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 1 },
-//         { clazz: undefined, prob: 3 },
-//       ],
-//     },
-//     xp: 10,
-//   },
-//   prototypes: [ACTOR_TYPES.HOSTILE_HUMANOID],
-// });
-
-// Actors.ActorFactory.registerActorDef({
-//   name: ACTOR_TYPES.ORC,
-//   ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: PLAYER_WALK_TIME },
-//   attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 2 },
-//   ch: "o",
-//   color: 0x3f7f3f,
-//   destructible: {
-//     corpseName: "dead orc",
-//     defence: 0,
-//     healthPoints: 9,
-//     loot: {
-//       classProb: [
-//         { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 1 },
-//         { clazz: ACTOR_TYPES.POTION, prob: 1 },
-//       ],
-//       countProb: { 0: 30, 1: 50, 2: 20 },
-//     },
-//     xp: 35,
-//   },
-//   prototypes: [ACTOR_TYPES.HOSTILE_HUMANOID],
-// });
-
-// Actors.ActorFactory.registerActorDef({
-//   name: ACTOR_TYPES.TROLL,
-//   ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: PLAYER_WALK_TIME },
-//   attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 3 },
-//   blockSight: true,
-//   ch: "T",
-//   color: 0x007f00,
-//   destructible: {
-//     corpseName: "troll carcass",
-//     defence: 1,
-//     healthPoints: 15,
-//     loot: {
-//       classProb: [
-//         { clazz: ACTOR_TYPES.GOLD_PIECE, prob: 1 },
-//         { clazz: ACTOR_TYPES.POTION, prob: 1 },
-//       ],
-//       countProb: { 0: 15, 1: 60, 2: 25 },
-//     },
-//     xp: 100,
-//   },
-//   prototypes: [ACTOR_TYPES.HOSTILE_HUMANOID],
-// });
-
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.HUMAN,
   abstract: true,
   ch: "@",
   container: {
-    capacity: 20,
+    capacity: 200,
     slots: [
       Actors.SLOT_LEFT_HAND,
       Actors.SLOT_RIGHT_HAND,
       Actors.SLOT_BOTH_HANDS,
-      Actors.SLOT_QUIVER,
+      Actors.SLOT_SPELL,
+      Actors.SLOT_BODY,
+      Actors.SLOT_BOOTS,
+      Actors.SLOT_LEGS,
+      Actors.SLOT_HEAD,
     ],
   },
   prototypes: [ACTOR_TYPES.HUMANOID],
@@ -351,30 +278,15 @@ Actors.ActorFactory.registerActorDef({
   color: HEALTH_POTION_COLOR,
   pickable: {
     destroyedWhenThrown: true,
-    onThrowEffector: {
-      destroyOnEffect: true,
-      effect: <IInstantHealthEffectDef>{
-        amount: 3,
-        failureMessage:
-          "The potion explodes on [the actor1] but it has no effect",
-        successMessage:
-          "The potion explodes on [the actor1], healing [it] for [value1] hit points.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
-      },
-      targetSelector: {
-        method: Actors.TargetSelectionMethodEnum.SELECTED_RANGE,
-        radius: 1,
-      },
-    },
     onUseEffector: {
       destroyOnEffect: true,
-      effect: <IInstantHealthEffectDef>{
+      effect: {
         amount: 20,
         failureMessage:
           "[The actor1] drink[s] the health potion but it has no effect",
         successMessage:
           "[The actor1] drink[s] the health potion and regain[s] [value1] hit points.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+        type: "health",
       },
       targetSelector: { method: Actors.TargetSelectionMethodEnum.WEARER },
     },
@@ -389,30 +301,15 @@ Actors.ActorFactory.registerActorDef({
   color: HEALTH_POTION_COLOR,
   pickable: {
     destroyedWhenThrown: true,
-    onThrowEffector: {
-      destroyOnEffect: true,
-      effect: <IInstantHealthEffectDef>{
-        amount: 3,
-        failureMessage:
-          "The potion explodes on [the actor1] but it has no effect",
-        successMessage:
-          "The potion explodes on [the actor1], healing [it] for [value1] hit points.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
-      },
-      targetSelector: {
-        method: Actors.TargetSelectionMethodEnum.SELECTED_RANGE,
-        radius: 1,
-      },
-    },
     onUseEffector: {
       destroyOnEffect: true,
-      effect: <IInstantHealthEffectDef>{
+      effect: {
         amount: 100,
         failureMessage:
           "[The actor1] drink[s] the health potion but it has no effect",
         successMessage:
           "[The actor1] drink[s] the health potion and regain[s] [value1] hit points.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+        type: "health",
       },
       targetSelector: { method: Actors.TargetSelectionMethodEnum.WEARER },
     },
@@ -423,55 +320,50 @@ Actors.ActorFactory.registerActorDef({
 });
 
 Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.REGENERATION_POTION,
-  color: HEALTH_POTION_COLOR,
+  name: ACTOR_TYPES.MANA_POTION,
+  color: MANA_POTION_COLOR,
   pickable: {
     destroyedWhenThrown: true,
-    onThrowEffector: {
-      destroyOnEffect: true,
-      effect: <IConditionEffectDef>{
-        condition: {
-          amount: 6,
-          name: "regeneration",
-          nbTurns: 12,
-          type: Actors.ConditionTypeEnum.HEALTH_VARIATION,
-        },
-        successMessage:
-          "The potion explodes on [the actor1].\nLife is flowing through [it].",
-        type: Actors.EffectTypeEnum.CONDITION,
-      },
-      targetSelector: {
-        method: Actors.TargetSelectionMethodEnum.SELECTED_RANGE,
-        radius: 1,
-      },
-    },
     onUseEffector: {
       destroyOnEffect: true,
-      effect: <IConditionEffectDef>{
-        condition: {
-          amount: 10,
-          name: "regeneration",
-          nbTurns: 20,
-          type: Actors.ConditionTypeEnum.HEALTH_VARIATION,
-        },
-        successMessage:
-          "[The actor1] drink[s] the regeneration potion and feel[s]\n" +
-          "the life flowing through [it].",
-        type: Actors.EffectTypeEnum.CONDITION,
+      effect: {
+        amount: 20,
+        type: "mana",
       },
       targetSelector: { method: Actors.TargetSelectionMethodEnum.WEARER },
     },
-    price: 10,
+    price: 20,
     weight: 0.5,
   },
   prototypes: [ACTOR_TYPES.POTION],
 });
+
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.GREATER_MANA_POTION,
+  color: MANA_POTION_COLOR,
+  pickable: {
+    destroyedWhenThrown: true,
+    onUseEffector: {
+      destroyOnEffect: true,
+      effect: {
+        amount: 100,
+        type: "mana",
+      },
+      targetSelector: { method: Actors.TargetSelectionMethodEnum.WEARER },
+    },
+    price: 20,
+    weight: 0.5,
+  },
+  prototypes: [ACTOR_TYPES.POTION],
+});
+
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.ARTEFACT,
   ch: "%",
   color: STEEL_COLOR,
   containerQualifier: true,
   pickable: {
+    neverDropItem: true,
     price: -1,
     weight: 2,
   },
@@ -492,12 +384,12 @@ Actors.ActorFactory.registerActorDef({
   pickable: {
     onUseEffector: {
       destroyOnEffect: true,
-      effect: <IInstantHealthEffectDef>{
+      effect: {
         amount: -20,
         successMessage:
           "A lightning bolt strikes [the actor1] with a loud thunder!\n" +
           "The damage is [value1] hit points.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+        type: "health",
       },
       targetSelector: {
         method: Actors.TargetSelectionMethodEnum.CLOSEST_ENEMY,
@@ -515,10 +407,10 @@ Actors.ActorFactory.registerActorDef({
   pickable: {
     onUseEffector: {
       destroyOnEffect: true,
-      effect: <IInstantHealthEffectDef>{
-        amount: -12,
+      effect: {
+        amount: -30,
         successMessage: "[The actor1] get[s] burned for [value1] hit points.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+        type: "health",
       },
       message: "A fireball explodes, burning everything within 3 tiles.",
       targetSelector: {
@@ -538,7 +430,7 @@ Actors.ActorFactory.registerActorDef({
   pickable: {
     onUseEffector: {
       destroyOnEffect: true,
-      effect: <IConditionEffectDef>{
+      effect: {
         condition: {
           nbTurns: 12,
           type: Actors.ConditionTypeEnum.CONFUSED,
@@ -546,7 +438,7 @@ Actors.ActorFactory.registerActorDef({
         },
         successMessage:
           "[The actor1's] eyes look vacant,\nas [it] start[s] to stumble around!",
-        type: Actors.EffectTypeEnum.CONDITION,
+        type: "condition",
       },
       targetSelector: {
         method: Actors.TargetSelectionMethodEnum.SELECTED_ACTOR,
@@ -558,6 +450,56 @@ Actors.ActorFactory.registerActorDef({
   },
   prototypes: [ACTOR_TYPES.SCROLL],
 });
+
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.CHARM_MONSTER,
+  color: BONE_COLOR,
+  ch: "~",
+  pickable: {
+    neverDropItem: true,
+    manaCost: 10,
+    onThrowEffector: {
+      destroyOnEffect: false,
+      effect: {
+        condition: {
+          nbTurns: 12,
+          type: Actors.ConditionTypeEnum.CHARMED,
+          noCorpse: true,
+        },
+        successMessage:
+          "[The actor1's] eyes look wide,\nas [it] start[s] to fight for you!",
+        type: "condition",
+      },
+      targetSelector: {
+        method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
+      },
+    },
+    price: 10,
+    weight: 0,
+  },
+  prototypes: [ACTOR_TYPES.SPELL_ITEM],
+});
+
+// Actors.ActorFactory.registerActorDef({
+//   name: ACTOR_TYPES.SCROLL_OF_SUMMONING,
+//   pickable: {
+//     onUseEffector: {
+//       destroyOnEffect: true,
+//       effect: {
+//         amount: -30,
+//         successMessage: "[The actor1] get[s] burned for [value1] hit points.",
+//         type: "health",
+//       },
+//       targetSelector: {
+//         method: Actors.TargetSelectionMethodEnum.SELECTED_EMPTY_TILE,
+//         range: 5,
+//       },
+//     },
+//     price: 10,
+//     weight: 0.1,
+//   },
+//   prototypes: [ACTOR_TYPES.SCROLL],
+// });
 
 // ================================== weapons ==================================
 Actors.ActorFactory.registerActorDef({
@@ -576,39 +518,39 @@ Actors.ActorFactory.registerActorDef({
   prototypes: [ACTOR_TYPES.WEAPON],
 });
 
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.KNIFE,
-  attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 3 },
-  equipment: { slots: [Actors.SLOT_RIGHT_HAND] },
-  pickable: {
-    onThrowEffector: {
-      destroyOnEffect: false,
-      effect: <IInstantHealthEffectDef>{
-        amount: -1,
-        successMessage: "The sword hits [the actor1] for [value1] hit points.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
-      },
-      targetSelector: {
-        method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
-      },
-    },
-    price: 1,
-    weight: 0.5,
-  },
-  prototypes: [ACTOR_TYPES.BLADE],
-});
+// Actors.ActorFactory.registerActorDef({
+//   name: ACTOR_TYPES.KNIFE,
+//   attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 3 },
+//   equipment: { slots: [Actors.SLOT_RIGHT_HAND] },
+//   pickable: {
+//     onThrowEffector: {
+//       destroyOnEffect: false,
+//       effect: {
+//         amount: -1,
+//         successMessage: "The sword hits [the actor1] for [value1] hit points.",
+//         type: "health",
+//       },
+//       targetSelector: {
+//         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
+//       },
+//     },
+//     price: 1,
+//     weight: 0.5,
+//   },
+//   prototypes: [ACTOR_TYPES.BLADE],
+// });
 
 Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.SHORT_SWORD,
+  name: ACTOR_TYPES.SHORT_STAFF,
   attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 4 },
   equipment: { slots: [Actors.SLOT_RIGHT_HAND] },
   pickable: {
     onThrowEffector: {
       destroyOnEffect: false,
-      effect: <IInstantHealthEffectDef>{
+      effect: {
         amount: -4,
         successMessage: "The sword hits [the actor1] for [value1] hit points.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+        type: "health",
       },
       targetSelector: {
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
@@ -621,16 +563,16 @@ Actors.ActorFactory.registerActorDef({
 });
 
 Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.LONGSWORD,
+  name: ACTOR_TYPES.LONGSTAFF,
   attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 6 },
   equipment: { slots: [Actors.SLOT_RIGHT_HAND] },
   pickable: {
     onThrowEffector: {
       destroyOnEffect: false,
-      effect: <IInstantHealthEffectDef>{
+      effect: {
         amount: -6,
         successMessage: "The sword hits [the actor1] for [value1] hit points.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+        type: "health",
       },
       targetSelector: {
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
@@ -643,16 +585,16 @@ Actors.ActorFactory.registerActorDef({
 });
 
 Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.GREATSWORD,
+  name: ACTOR_TYPES.GREATSTAFF,
   attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 9 },
   equipment: { slots: [Actors.SLOT_RIGHT_HAND] },
   pickable: {
     onThrowEffector: {
       destroyOnEffect: false,
-      effect: <IInstantHealthEffectDef>{
+      effect: {
         amount: -9,
         successMessage: "The sword hits [the actor1] for [value1] hit points.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+        type: "health",
       },
       targetSelector: {
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
@@ -665,16 +607,16 @@ Actors.ActorFactory.registerActorDef({
 });
 
 Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.POWERSWORD,
+  name: ACTOR_TYPES.POWERSTAFF,
   attacker: { attackTime: PLAYER_WALK_TIME, hitPoints: 13 },
   equipment: { slots: [Actors.SLOT_RIGHT_HAND] },
   pickable: {
     onThrowEffector: {
       destroyOnEffect: false,
-      effect: <IInstantHealthEffectDef>{
+      effect: {
         amount: -13,
         successMessage: "The sword hits [the actor1] for [value1] hit points.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+        type: "health",
       },
       targetSelector: {
         method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
@@ -685,79 +627,128 @@ Actors.ActorFactory.registerActorDef({
   },
   prototypes: [ACTOR_TYPES.BLADE],
 });
+const armourPickable = {
+  onThrowEffector: {
+    destroyOnEffect: false,
+    effect: {
+      condition: {
+        nbTurns: 2,
+        type: Actors.ConditionTypeEnum.STUNNED,
+        noCorpse: true,
+      },
+      successMessage: "The shield hits [the actor1] and stuns [it]!",
+      type: "condition",
+    } as EffectDef,
+    targetSelector: {
+      method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
+    },
+  },
+  price: 5,
+  weight: 5,
+};
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.SHIELD,
   abstract: true,
   ch: "[",
   containerQualifier: true,
-  pickable: {
-    onThrowEffector: {
-      destroyOnEffect: false,
-      effect: <IConditionEffectDef>{
-        condition: {
-          nbTurns: 2,
-          type: Actors.ConditionTypeEnum.STUNNED,
-          noCorpse: true,
-        },
-        successMessage: "The shield hits [the actor1] and stuns [it]!",
-        type: Actors.EffectTypeEnum.CONDITION,
-      },
-      targetSelector: {
-        method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
-      },
+  pickable: armourPickable,
+  prototypes: [ACTOR_TYPES.ITEM],
+});
+
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.ARMOUR,
+  abstract: true,
+  ch: "&",
+  containerQualifier: true,
+  pickable: armourPickable,
+  prototypes: [ACTOR_TYPES.ITEM],
+});
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.BOOTS,
+  abstract: true,
+  ch: '"',
+  containerQualifier: true,
+  pickable: armourPickable,
+  prototypes: [ACTOR_TYPES.ITEM],
+});
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.PANTS,
+  abstract: true,
+  ch: ":",
+  containerQualifier: true,
+  pickable: armourPickable,
+  prototypes: [ACTOR_TYPES.ITEM],
+});
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.HELMET,
+  abstract: true,
+  ch: "^",
+  containerQualifier: true,
+  pickable: armourPickable,
+  prototypes: [ACTOR_TYPES.ITEM],
+});
+for (const [proto, slot] of [
+  [ACTOR_TYPES.SHIELD, Actors.SLOT_LEFT_HAND],
+  [ACTOR_TYPES.ARMOUR, Actors.SLOT_BODY],
+  [ACTOR_TYPES.BOOTS, Actors.SLOT_BOOTS],
+  [ACTOR_TYPES.PANTS, Actors.SLOT_LEGS],
+  [ACTOR_TYPES.HELMET, Actors.SLOT_HEAD],
+]) {
+  Actors.ActorFactory.registerActorDef({
+    name: "wooden " + proto,
+    color: WOOD_COLOR,
+    equipment: {
+      defence: 1,
+      slots: [slot],
     },
-    price: 5,
-    weight: 5,
-  },
-  prototypes: [ACTOR_TYPES.WEAPON],
-});
+    prototypes: [proto],
+  });
 
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.WOODEN_SHIELD,
-  color: WOOD_COLOR,
-  equipment: {
-    defence: 1,
-    slots: [Actors.SLOT_LEFT_HAND],
-  },
-  prototypes: [ACTOR_TYPES.SHIELD],
-});
+  Actors.ActorFactory.registerActorDef({
+    name: "iron " + proto,
+    color: IRON_COLOR,
+    equipment: {
+      defence: 2,
+      slots: [slot],
+    },
+    prototypes: [proto],
+  });
 
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.IRON_SHIELD,
-  color: IRON_COLOR,
-  equipment: {
-    defence: 2,
-    slots: [Actors.SLOT_LEFT_HAND],
-  },
-  prototypes: [ACTOR_TYPES.SHIELD],
-});
+  Actors.ActorFactory.registerActorDef({
+    name: "great" + proto,
+    color: IRON_COLOR,
+    equipment: {
+      defence: 3,
+      slots: [slot],
+    },
+    prototypes: [proto],
+  });
 
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.GREATSHIELD,
-  color: IRON_COLOR,
-  equipment: {
-    defence: 3,
-    slots: [Actors.SLOT_LEFT_HAND],
-  },
-  prototypes: [ACTOR_TYPES.SHIELD],
-});
-
-Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.POWERSHIELD,
-  color: IRON_COLOR,
-  equipment: {
-    defence: 4,
-    slots: [Actors.SLOT_LEFT_HAND],
-  },
-  prototypes: [ACTOR_TYPES.SHIELD],
-});
-
+  Actors.ActorFactory.registerActorDef({
+    name: "power" + proto,
+    color: SUNROD_LIGHT_COLOR,
+    equipment: {
+      defence: 4,
+      slots: [slot],
+    },
+    prototypes: [proto],
+  });
+  Actors.ActorFactory.registerActorDef({
+    name: "master" + proto,
+    color: SUNROD_LIGHT_COLOR,
+    equipment: {
+      defence: 5,
+      slots: [slot],
+    },
+    prototypes: [proto],
+  });
+}
 Actors.ActorFactory.registerActorDef({
   name: ACTOR_TYPES.PROJECTILE,
   abstract: true,
   ch: "\\",
   containerQualifier: true,
-  equipment: { slots: [Actors.SLOT_QUIVER] },
+  equipment: { slots: [Actors.SLOT_SPELL] },
   prototypes: [ACTOR_TYPES.WEAPON],
 });
 
@@ -769,17 +760,26 @@ Actors.ActorFactory.registerActorDef({
 });
 
 Actors.ActorFactory.registerActorDef({
-  name: ACTOR_TYPES.TIME_DART,
+  name: ACTOR_TYPES.SPELL_ITEM,
+  abstract: true,
+  containerQualifier: true,
+  prototypes: [ACTOR_TYPES.PROJECTILE],
+});
+
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.POWER_BOLT,
   color: BONE_COLOR,
-  ch: "\\",
+  ch: "~",
   pickable: {
+    neverDropItem: true,
+    manaCost: 5,
     onThrowEffector: {
-      destroyOnEffect: true,
-      effect: <IInstantHealthEffectDef>{
-        amount: -2,
+      destroyOnEffect: false,
+      effect: {
+        amount: 0, // Derived from power
         successMessage:
-          "The time dart instantly hits [the actor1] for [value1] damage.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+          "The power blast hits [the actor1] for [value1] damage.",
+        type: "health",
         singleActor: true,
       },
       targetSelector: {
@@ -787,9 +787,57 @@ Actors.ActorFactory.registerActorDef({
       },
     },
     price: 10,
-    weight: 0.1,
+    weight: 0,
   },
-  prototypes: [ACTOR_TYPES.THROWN],
+  prototypes: [ACTOR_TYPES.SPELL_ITEM],
+});
+
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.GREATER_BOLT,
+  color: BONE_COLOR,
+  ch: "~",
+  pickable: {
+    neverDropItem: true,
+    manaCost: 12,
+    onThrowEffector: {
+      destroyOnEffect: false,
+      effect: {
+        amount: 0, // Derived from power
+        successMessage:
+          "The greater blast hits [the actor1] for [value1] damage.",
+        type: "health",
+        singleActor: true,
+      },
+      targetSelector: {
+        method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
+      },
+    },
+    price: 10,
+    weight: 0,
+  },
+  prototypes: [ACTOR_TYPES.SPELL_ITEM],
+});
+
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.BLINK,
+  color: BONE_COLOR,
+  ch: "~",
+  pickable: {
+    neverDropItem: true,
+    manaCost: 5,
+    onThrowEffector: {
+      destroyOnEffect: false,
+      effect: {
+        type: "blink",
+      },
+      targetSelector: {
+        method: Actors.TargetSelectionMethodEnum.ACTOR_ON_CELL,
+      },
+    },
+    price: 10,
+    weight: 0,
+  },
+  prototypes: [ACTOR_TYPES.SPELL_ITEM],
 });
 
 Actors.ActorFactory.registerActorDef({
@@ -805,10 +853,10 @@ Actors.ActorFactory.registerActorDef({
   pickable: {
     onThrowEffector: {
       destroyOnEffect: true,
-      effect: <IInstantHealthEffectDef>{
+      effect: {
         amount: -2,
         successMessage: "The arrow hits [the actor1] for [value1] points.",
-        type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+        type: "health",
         singleActor: true,
       },
       targetSelector: {
@@ -838,7 +886,7 @@ Actors.ActorFactory.registerActorDef({
   equipment: { slots: [Actors.SLOT_BOTH_HANDS] },
   prototypes: [ACTOR_TYPES.RANGED],
   ranged: {
-    damageCoef: 4,
+    damageBonus: 4,
     loadTime: 4,
     projectileType: ACTOR_TYPES.ARROW,
     range: 15,
@@ -850,7 +898,7 @@ Actors.ActorFactory.registerActorDef({
   equipment: { slots: [Actors.SLOT_BOTH_HANDS] },
   prototypes: [ACTOR_TYPES.RANGED],
   ranged: {
-    damageCoef: 8,
+    damageBonus: 8,
     loadTime: 6,
     projectileType: ACTOR_TYPES.ARROW,
     range: 30,
@@ -881,14 +929,14 @@ Actors.ActorFactory.registerActorDef({
     charges: 5,
     onFireEffect: {
       destroyOnEffect: false,
-      effect: <IConditionEffectDef>{
+      effect: {
         condition: {
           nbTurns: 10,
           type: Actors.ConditionTypeEnum.FROZEN,
           noDisplay: true,
         },
         successMessage: "[The actor1] [is] covered with frost.",
-        type: Actors.EffectTypeEnum.CONDITION,
+        type: "condition",
       },
       message: "[The actor1] zap[s] [its] wand.",
       targetSelector: {
@@ -920,9 +968,9 @@ Actors.ActorFactory.registerActorDef({
     weight: 0.1,
     onUseEffector: {
       destroyOnEffect: true,
-      effect: <ITeleportEffectDef>{
+      effect: {
         successMessage: "[The actor1] disappear[s] suddenly.",
-        type: Actors.EffectTypeEnum.TELEPORT,
+        type: "teleport",
         singleActor: true,
       },
       message: "[The actor1] zap[s] [its] staff.",
@@ -942,14 +990,14 @@ Actors.ActorFactory.registerActorDef({
     weight: 0.1,
     onUseEffector: {
       destroyOnEffect: true,
-      effect: <IConditionEffectDef>{
+      effect: {
         condition: {
           nbTurns: 30,
           range: 15,
           type: Actors.ConditionTypeEnum.DETECT_LIFE,
         },
         successMessage: "[The actor1] [is] aware of life around [it].",
-        type: Actors.EffectTypeEnum.CONDITION,
+        type: "condition",
       },
       message: "[The actor1] zap[s] [its] staff.",
       targetSelector: { method: Actors.TargetSelectionMethodEnum.WEARER },
@@ -958,16 +1006,42 @@ Actors.ActorFactory.registerActorDef({
   prototypes: [ACTOR_TYPES.SCROLL],
 });
 
+Actors.ActorFactory.registerActorDef({
+  name: ACTOR_TYPES.SCROLL_OF_CHARM_MONSTER,
+  pickable: {
+    onUseEffector: {
+      destroyOnEffect: true,
+      effect: {
+        condition: {
+          nbTurns: 12,
+          type: Actors.ConditionTypeEnum.CHARMED,
+          noCorpse: true,
+        },
+        successMessage:
+          "[The actor1's] eyes look vacant,\nas [it] start[s] to stumble around!",
+        type: "condition",
+      },
+      targetSelector: {
+        method: Actors.TargetSelectionMethodEnum.SELECTED_ACTOR,
+        range: 5,
+      },
+    },
+    price: 10,
+    weight: 0.1,
+  },
+  prototypes: [ACTOR_TYPES.SCROLL],
+});
+
 // name: ACTOR_TYPES.SCROLL_OF_LIGHTNING_BOLT,
 // pickable: {
 //   onUseEffector: {
 //     destroyOnEffect: true,
-//     effect: <IInstantHealthEffectDef>{
+//     effect: {
 //       amount: -20,
 //       successMessage:
 //         "A lightning bolt strikes [the actor1] with a loud thunder!\n" +
 //         "The damage is [value1] hit points.",
-//       type: Actors.EffectTypeEnum.INSTANT_HEALTH,
+//       type "health",
 //     },
 //     targetSelector: {
 //       method: Actors.TargetSelectionMethodEnum.CLOSEST_ENEMY,
@@ -983,7 +1057,7 @@ Actors.ActorFactory.registerActorDef({
     onUseEffector: {
       destroyOnEffect: true,
       effect: {
-        type: Actors.EffectTypeEnum.MAP_REVEAL,
+        type: "reveal",
       },
       message: "[The actor1] read[s] [its] scroll of mapping.",
       targetSelector: { method: Actors.TargetSelectionMethodEnum.WEARER },
@@ -1064,14 +1138,14 @@ Actors.ActorFactory.registerActorDef({
   activable: {
     onActivateEffector: {
       destroyOnEffect: false,
-      effect: <IEventEffectDef>{
+      effect: {
         eventData: {
           mapIdOffset: -1,
           portalType: ACTOR_TYPES.STAIRS_DOWN,
           portalVariant: 0,
         },
         eventType: EVENT_USE_PORTAL,
-        type: Actors.EffectTypeEnum.EVENT,
+        type: "event",
       },
       targetSelector: {
         method: Actors.TargetSelectionMethodEnum.WEARER,
@@ -1088,14 +1162,14 @@ Actors.ActorFactory.registerActorDef({
   activable: {
     onActivateEffector: {
       destroyOnEffect: false,
-      effect: <IEventEffectDef>{
+      effect: {
         eventData: {
           mapIdOffset: +1,
           portalType: ACTOR_TYPES.STAIRS_UP,
           portalVariant: 0,
         },
         eventType: EVENT_USE_PORTAL,
-        type: Actors.EffectTypeEnum.EVENT,
+        type: "event",
       },
       targetSelector: {
         method: Actors.TargetSelectionMethodEnum.WEARER,

@@ -133,16 +133,16 @@ export abstract class MapScene
         positiveButton: Umbra.KeyCodeEnum.DOM_VK_I,
         type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
       },
-      {
-        name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.SACRIFICE_ITEM],
-        positiveButton: Umbra.KeyCodeEnum.DOM_VK_S,
-        type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
-      },
-      {
-        name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.SACRIFICE_ITEM],
-        positiveButton: Umbra.KeyCodeEnum.DOM_VK_P,
-        type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
-      },
+      // {
+      //   name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.SACRIFICE_ITEM],
+      //   positiveButton: Umbra.KeyCodeEnum.DOM_VK_S,
+      //   type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
+      // },
+      // {
+      //   name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.SACRIFICE_ITEM],
+      //   positiveButton: Umbra.KeyCodeEnum.DOM_VK_P,
+      //   type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
+      // },
       {
         name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.DROP_ITEM],
         positiveButton: Umbra.KeyCodeEnum.DOM_VK_D,
@@ -163,11 +163,11 @@ export abstract class MapScene
         positiveButton: Umbra.KeyCodeEnum.DOM_VK_O,
         type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
       },
-      {
-        name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.AUTOFIGHT],
-        positiveButton: Umbra.KeyCodeEnum.DOM_VK_U,
-        type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
-      },
+      // {
+      //   name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.AUTOFIGHT],
+      //   positiveButton: Umbra.KeyCodeEnum.DOM_VK_U,
+      //   type: Umbra.AxisTypeEnum.KEY_OR_BUTTON,
+      // },
       {
         name: Actors.PlayerActionEnum[Actors.PlayerActionEnum.AUTOFIGHT],
         positiveButton: Umbra.KeyCodeEnum.DOM_VK_TAB,
@@ -283,7 +283,7 @@ export abstract class MapScene
         this.map.computeFov(
           player.pos.x,
           player.pos.y,
-          1 + player.xpHolder.xpLevel
+          Math.min(4, 3 + Math.floor(player.xpHolder.xpLevel / 2 - 0.5))
         );
         this.map.updateScentField(player.pos.x, player.pos.y);
       }

@@ -8,6 +8,7 @@ import * as Gui from ".//gui/main";
 import * as Actors from ".//actors/main";
 import * as Map from ".//map/main";
 import * as Constants from "./base";
+import { findNearestEnemy } from "./map_utils";
 
 /**
  * =============================================================================
@@ -32,6 +33,7 @@ export class TilePicker
   private origin: Core.Position | undefined;
   private range: number | undefined;
   private radius: number | undefined;
+  private minRange: number | undefined;
 
   constructor() {
     super();
@@ -42,12 +44,15 @@ export class TilePicker
   public pickATile(
     message: string,
     origin?: Core.Position,
+    minRange?: number,
     range?: number,
-    radius?: number
-  ): Promise<Core.Position> {
+    radius?: number,
+    autotargetEnemy?: boolean
+  ): Promise<Core.Position | undefined> {
     return new Promise<Core.Position>((resolve) => {
       this.resolve = resolve;
       this.origin = origin;
+      this.minRange = minRange;
       this.range = range;
       this.radius = radius;
       this.tileIsValid = true;
@@ -55,6 +60,13 @@ export class TilePicker
         Actors.Actor.specialActors[Actors.SpecialActorsEnum.PLAYER];
       this.tilePos.x = player.pos.x;
       this.tilePos.y = player.pos.y;
+      if (autotargetEnemy) {
+        const enemy = findNearestEnemy(player.pos);
+        if (enemy) {
+          this.tilePos.x = enemy.x;
+          this.tilePos.y = enemy.y;
+        }
+      }
       this.show();
       Umbra.logger.warn(message);
     });
@@ -69,7 +81,8 @@ export class TilePicker
         ? Constants.TILEPICKER_OK_COLOR
         : Constants.TILEPICKER_KO_COLOR;
     }
-    let hasRange: boolean = this.range && this.origin ? true : false;
+    let hasRange: boolean =
+      (this.range || this.minRange) && this.origin ? true : false;
     let hasRadius: boolean = this.radius ? true : false;
     if (hasRange || hasRadius) {
       // render the range and/or radius
@@ -78,21 +91,25 @@ export class TilePicker
         for (pos.y = 0; pos.y < Map.Map.current.h; ++pos.y) {
           let atRange: boolean =
             this.origin && hasRange
-              ? Core.Position.distance(this.origin, pos) <= (this.range || 0)
+              ? Core.Position.taxiDistance(this.origin, pos) <=
+                  (this.range || 99) &&
+                Core.Position.taxiDistance(this.origin, pos) >=
+                  (this.minRange || 0)
               : true;
           let inRadius: boolean =
             this.tileIsValid && hasRadius
-              ? Core.Position.distance(this.tilePos, pos) <= (this.radius || 0)
+              ? Core.Position.taxiDistance(this.tilePos, pos) <=
+                (this.radius || 0)
               : false;
-          let coef = inRadius ? 1.2 : atRange ? 1 : 0.8;
-          if (coef !== 1) {
+          let bonus = inRadius ? 1.2 : atRange ? 1 : 0.8;
+          if (bonus !== 1) {
             console.back[pos.x][pos.y] = Core.ColorUtils.multiply(
               console.back[pos.x][pos.y],
-              coef
+              bonus
             );
             console.fore[pos.x][pos.y] = Core.ColorUtils.multiply(
               console.fore[pos.x][pos.y],
-              coef
+              bonus
             );
           }
         }
@@ -109,6 +126,7 @@ export class TilePicker
   public checkKeyboardInput() {
     if (Actors.getLastPlayerAction() === Actors.PlayerActionEnum.CANCEL) {
       this.hide();
+      this.resolve(undefined);
       Umbra.resetInput();
       return;
     }
@@ -134,6 +152,7 @@ export class TilePicker
       switch (action) {
         case Actors.PlayerActionEnum.CANCEL:
           this.hide();
+          this.resolve(undefined);
           Umbra.resetInput();
           break;
         case Actors.PlayerActionEnum.VALIDATE:
@@ -158,6 +177,7 @@ export class TilePicker
       }
     } else if (Umbra.wasMouseButtonReleased(Umbra.MouseButtonEnum.RIGHT)) {
       this.hide();
+      this.resolve(undefined);
     }
   }
 
@@ -176,8 +196,15 @@ export class TilePicker
     }
     if (
       this.origin &&
+      this.minRange &&
+      Core.Position.taxiDistance(this.origin, this.tilePos) < this.minRange
+    ) {
+      return false;
+    }
+    if (
+      this.origin &&
       this.range &&
-      Core.Position.distance(this.origin, this.tilePos) > this.range
+      Core.Position.taxiDistance(this.origin, this.tilePos) > this.range
     ) {
       return false;
     }

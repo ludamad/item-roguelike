@@ -234,10 +234,10 @@ export class LightDungeonShader implements Umbra.IEventListener, IMapShader {
 
   private computeLightMaps(mode: Actors.LightRenderModeEnum) {
     for (let actor of this.lights[mode]) {
-      let intensityCoef: number = actor.light.computeIntensityVariation(
+      let intensitybonus: number = actor.light.computeIntensityVariation(
         Umbra.application.elapsedTime
       );
-      this.computeLightMap(actor, intensityCoef);
+      this.computeLightMap(actor, intensitybonus);
     }
   }
 
@@ -251,7 +251,7 @@ export class LightDungeonShader implements Umbra.IEventListener, IMapShader {
     }
   }
 
-  private computeLightMap(actor: Actors.Actor, intensityCoef: number) {
+  private computeLightMap(actor: Actors.Actor, intensitybonus: number) {
     let range: Core.Rect = new Core.Rect();
     let pos: Core.Position = actor.light.position;
     if (pos === undefined) {
@@ -264,9 +264,9 @@ export class LightDungeonShader implements Umbra.IEventListener, IMapShader {
     range.clamp(0, 0, Map.current.w, Map.current.h);
     let squaredRange: number = actor.light.options.range;
     squaredRange = squaredRange * squaredRange;
-    // we use intensity variation coef to also slightly move the light position
-    let posVariationCoef = actor.light.options.intensityVariationRange
-      ? ((1 - intensityCoef) / actor.light.options.intensityVariationRange -
+    // we use intensity variation bonus to also slightly move the light position
+    let posVariationbonus = actor.light.options.intensityVariationRange
+      ? ((1 - intensitybonus) / actor.light.options.intensityVariationRange -
           0.5) *
         0.25
       : 0;
@@ -291,19 +291,19 @@ export class LightDungeonShader implements Umbra.IEventListener, IMapShader {
       x < xmax;
       ++x
     ) {
-      let dx2 = pos.x - x + posVariationCoef;
+      let dx2 = pos.x - x + posVariationbonus;
       dx2 = dx2 * dx2;
       for (
         let y: number = range.y, ymax: number = range.y + range.h;
         y < ymax;
         ++y
       ) {
-        let dy2 = pos.y - y - posVariationCoef;
+        let dy2 = pos.y - y - posVariationbonus;
         dy2 = dy2 * dy2;
         this.lightMap[x][y] = actor.light.options.color;
         // if (dx2 + dy2 <= squaredRange && this.inFov[x][y]) {
-        //   let intensity: number = 1; //intensityCoef;
-        //   // actor.light.computeIntensity(dx2 + dy2) * intensityCoef;
+        //   let intensity: number = 1; //intensitybonus;
+        //   // actor.light.computeIntensity(dx2 + dy2) * intensitybonus;
         //   this.lightMap[x][y] = actor.light.options.color;
         //   // lightOperation(
         //   //   this.lightMap[x][y],

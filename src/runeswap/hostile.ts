@@ -1,5 +1,5 @@
 import * as Actors from "./actors/main";
-import { PLAYER_WALK_TIME } from "./actors/main";
+import { Destructible, PLAYER_WALK_TIME } from "./actors/main";
 import { ACTOR_TYPES } from "./base";
 import { HOSTILE_DESCS } from "./hostile_db";
 
@@ -13,20 +13,33 @@ export interface HostileDescriptor {
   experienceModifier: number;
 }
 
+// function calculateMonsterLevel(hostile: HostileDescriptor) {
+//   for (let level = 1; level <= 5; level++) {
+//     compu
+//     new Destructible()
+//     if (hostile.)
+//   }
+//   const playerPower;
+// }
+
 function calcXp(hostile: HostileDescriptor) {
   // return Math.ceil(
   //   (hostile.healthPoints ** 0.65 * hostile.experienceModifier) / 12
   // );
+  // console.log("LVL", hostile.name, calculateMonsterLevel(hostile));
   return Math.ceil(
-    Math.sqrt((hostile.healthPoints * (hostile.attack + hostile.defence)) / 8)
+    (hostile.healthPoints ** 0.8 * hostile.attack) / 14
+    // (hostile.attack * 5) ** 0.8
   );
 }
 
 function registerHostileDef(hostileDesc: HostileDescriptor) {
-  const { name, attack, character, color, defence, healthPoints } = hostileDesc;
+  let { name, attack, character, color, healthPoints } = hostileDesc;
   if (healthPoints <= 1) {
     return;
   }
+  healthPoints += hostileDesc.defence * 5;
+  const defence = 0; // simplification
   Actors.ActorFactory.registerActorDef({
     name: name + "[s]",
     ai: { type: Actors.AiTypeEnum.MONSTER, walkTime: PLAYER_WALK_TIME },

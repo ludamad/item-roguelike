@@ -20,8 +20,8 @@ export const HEALTH_BAR_FOREGROUND: Core.Color = 0x7f3f3f;
 export const HEALTH_BAR_GOOD_FOREGROUND: Core.Color = 0x1f3f1f;
 export const XP_BAR_BACKGROUND: Core.Color = 0x9f3fff;
 export const XP_BAR_FOREGROUND: Core.Color = 0x3f007f;
-export const FAVOR_BAR_BACKGROUND: Core.Color = 0xff3f9f;
-export const FAVOR_BAR_FOREGROUND: Core.Color = 0x7f003f;
+export const FAVOR_BAR_BACKGROUND: Core.Color = 0x7f003f;
+export const FAVOR_BAR_FOREGROUND: Core.Color = 0xf05f30;
 export const CONDITION_BAR_BACKGROUND: Core.Color = 0x3f9f3f;
 export const CONDITION_BAR_FOREGROUND: Core.Color = 0x007f3f;
 export const INVENTORY_BACKGROUND_ACTIVE: Core.Color = 0x383830;
@@ -50,11 +50,12 @@ export const TORCH_LIGHT_COLOR: Core.Color = 0xffff44;
 export const SUNROD_LIGHT_COLOR: Core.Color = 0xeeeeff;
 export const NOLIGHT_COLOR: Core.Color = 0x444444;
 export const HEALTH_POTION_COLOR: Core.Color = 0xff66cc;
+export const MANA_POTION_COLOR: Core.Color = 0x66ffcc;
 export const OIL_FLASK_COLOR: Core.Color = 0xaf5320;
 
 // gui
-export const LOG_DARKEN_COEF: number = 0.8;
-export const STATUS_PANEL_HEIGHT: number = 7;
+export const LOG_DARKEN_bonus: number = 0.8;
+export const STATUS_PANEL_HEIGHT: number = 8;
 export const STAT_BAR_WIDTH: number = 20;
 export const CONTAINER_SCREEN_MIN_WIDTH: number = 30;
 export const CONTAINER_SCREEN_MIN_HEIGHT: number = 16;
@@ -83,6 +84,8 @@ export const CTX_KEY_GUARD: string = "guard";
 
 // persistence local storage keys
 export const PERSISTENCE_VERSION_KEY: string = "version";
+export const PERSISTENCE_SCHEDULER_TIME: string = "schedulerTime";
+export const PERSISTENCE_SCHEDULER_IDS: string = "schedulerIds";
 export const PERSISTENCE_STORY_KEY: string = "story";
 export const PERSISTENCE_DUNGEON_LEVEL: string = "dungeonLevel";
 export const PERSISTENCE_STATUS_PANEL: string = "statusPanel";
@@ -143,6 +146,8 @@ export const ACTOR_TYPES = {
   POTION: "potion[s]",
   HEALTH_POTION: "health potion[s]",
   GREATER_HEALTH_POTION: "greater health potion[s]",
+  MANA_POTION: "mana potion[s]",
+  GREATER_MANA_POTION: "greater mana potion[s]",
   REGENERATION_POTION: "regeneration potion[s]",
   SCROLL: "scroll[s]",
   SCROLL_OF_LIGHTNING_BOLT: "scroll[s] of lighting bolt",
@@ -150,16 +155,15 @@ export const ACTOR_TYPES = {
   SCROLL_OF_CONFUSION: "scroll[s] of confusion",
   WEAPON: "weapon[s]",
   BLADE: "blade[s]",
-  KNIFE: "knife[s]",
-  SHORT_SWORD: "short sword[s]",
-  LONGSWORD: "longsword[s]",
-  GREATSWORD: "greatsword[s]",
-  POWERSWORD: "powersword[s]",
+  SHORT_STAFF: "short staff[s]",
+  LONGSTAFF: "longstaff[s]",
+  GREATSTAFF: "greatstaff[s]",
+  POWERSTAFF: "powerstaff[s]",
   SHIELD: "shield[s]",
-  WOODEN_SHIELD: "wooden shield[s]",
-  IRON_SHIELD: "iron shield[s]",
-  GREATSHIELD: "greatshield[s]",
-  POWERSHIELD: "powershield[s]",
+  ARMOUR: "armour[s]",
+  BOOTS: "boots",
+  PANTS: "pants",
+  HELMET: "helmet",
   RANGED: "ranged",
   SHORT_BOW: "short bow[s]",
   LONG_BOW: "long bow[s]",
@@ -168,12 +172,18 @@ export const ACTOR_TYPES = {
   STAFF: "staff[s]",
   SCROLL_OF_TELEPORTATION: "scroll[s] of teleportation",
   SCROLL_OF_LIFE_DETECTION: "scroll[s] of life detection",
+  SCROLL_OF_CHARM_MONSTER: "scroll[s] of charm monster",
   SCROLL_OF_MAPPING: "scroll[s] of mapping",
+  SCROLL_OF_SUMMONING: "scroll[s] of summoning",
   PROJECTILE: "projectile[s]",
   ARROW: "arrow[s]",
   IRON_ARROW: "iron arrow[s]",
   THROWN: "thrown[s]",
-  TIME_DART: "time dart[s]",
+  SPELL_ITEM: "spell[s]",
+  POWER_BOLT: "Power Bolt (5MP)",
+  GREATER_BOLT: "Greater Bolt (12MP)",
+  CHARM_MONSTER: "Charm Monster (10MP)",
+  BLINK: "Blink (5MP)",
   KEY: "key[s]",
   DEVICE: "device[s]",
   STAIRS: "stairs",
